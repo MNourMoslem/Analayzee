@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="{% static 'css/analysis.css' %}">
 <link rel="stylesheet" href="{% static 'css/components.css' %}">
 <link rel="stylesheet" href="{% static 'css/charts.css' %}">
+<link rel="stylesheet" href="{% static 'css/statistics.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -180,14 +181,48 @@
                 </div>
             </div>
         </div>
-        <!-- Other Tab Contents -->
+        <!-- Statistics Tab Content -->
         <div class="tab-content" id="statistics-tab">
             <div class="content-header">
-                <h1 class="content-title">Statistics</h1>
-                <p class="content-subtitle">Comprehensive statistical overview</p>
+                <h1 class="content-title">Statistical Analysis</h1>
+                <p class="content-subtitle">Comprehensive statistical analysis and data insights</p>
             </div>
-            <p>Statistics functionality coming soon...</p>
+            <div class="statistics-container">
+                <div class="statistics-header">
+                    <h2 class="statistics-title">Statistics Engine</h2>
+                    <p class="statistics-subtitle">Generate detailed statistical analysis and insights from your data</p>
+                </div>
+                <div class="statistics-controls">
+                    <div class="statistics-control-group">
+                        <label for="analysisType">Analysis Type</label>
+                        <select id="analysisType">
+                            <option value="descriptive">Descriptive Statistics</option>
+                            <option value="correlation">Correlation Matrix</option>
+                            <option value="outliers">Outlier Detection</option>
+                            <option value="distribution">Distribution Analysis</option>
+                            <option value="insights">Data Insights</option>
+                        </select>
+                    </div>
+                    <div class="statistics-control-group">
+                        <label for="statisticsColumn">Column</label>
+                        <select id="statisticsColumn">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="statistics-actions">
+                        <button id="generateStatistics" class="btn btn-primary">Generate Analysis</button>
+                        <button id="resetStatistics" class="btn btn-secondary">Reset All</button>
+                        <button id="exportStatistics" class="btn btn-secondary">Export Report</button>
+                    </div>
+                </div>
+                <div class="statistics-content">
+                    <div class="statistics-grid" id="statisticsGrid">
+                        <!-- Statistics cards will be dynamically generated here -->
+                    </div>
+                </div>
+            </div>
         </div>
+        <!-- Other Tab Contents -->
         <div class="tab-content" id="export-tab">
             <div class="content-header">
                 <h1 class="content-title">Export</h1>
@@ -212,5 +247,6 @@
 <script src="{% static 'js/magical-table.js' %}"></script>
 <script src="{% static 'js/column-analysis.js' %}"></script>
 <script src="{% static 'js/charts.js' %}"></script>
+<script src="{% static 'js/statistics.js' %}"></script>
 <script src="{% static 'js/analysis.js' %}"></script>
 {% endblock %} 
