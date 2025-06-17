@@ -270,19 +270,11 @@ class ComponentLibrary {
     // Tooltip functionality
     initTooltips() {
         document.addEventListener('mouseenter', (e) => {
-            if (e.target.matches('[data-tooltip]')) {
-                const element = e.target;
-                const tooltipText = element.dataset.tooltip;
-                const tooltipPosition = element.dataset.tooltipPosition || 'top';
-
-                this.showTooltip(element, tooltipText, tooltipPosition);
-            }
+            
         });
 
         document.addEventListener('mouseleave', (e) => {
-            if (e.target.matches('[data-tooltip]')) {
-                this.hideTooltip();
-            }
+            
         });
     }
 

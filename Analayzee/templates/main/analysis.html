@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load main_extras %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/analysis.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Hidden data elements for JavaScript -->
+<script id="tableData" type="application/json">{{ table_data|escapejs }}</script>
+<script id="tableColumns" type="application/json">{{ column_names|escapejs }}</script>
+
+<!-- Top Navigation Bar -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <a href="{% url 'main:home' %}" class="nav-brand">Analayzee</a>
+        <div class="nav-actions">
+            {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="#" class="nav-btn dropdown-toggle">
+                        👤 {{ user.first_name|default:user.username }}
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{% url 'accounts:profile' %}" class="dropdown-item">Profile</a>
+                        <a href="{% url 'accounts:subscription' %}" class="dropdown-item">Subscription</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'accounts:logout' %}" class="dropdown-item">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'accounts:login' %}" class="nav-btn">Login</a>
+                <a href="{% url 'accounts:signup' %}" class="nav-btn primary">Sign Up</a>
+            {% endif %}
+            <a href="{% url 'showcase' %}" class="nav-btn">🧪 Components</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Layout -->
+<div class="analysis-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Analysis Tools</h2>
+            <p class="sidebar-subtitle">Explore your data with powerful tools</p>
+        </div>
+        
+        <ul class="sidebar-tabs">
+            <li class="sidebar-tab active" data-tab="table">
+                <span class="tab-icon">📊</span>
+                <span>Table</span>
+            </li>
+            <li class="sidebar-tab" data-tab="charts">
+                <span class="tab-icon">📈</span>
+                <span>Charts</span>
+            </li>
+            <li class="sidebar-tab" data-tab="statistics">
+                <span class="tab-icon">📋</span>
+                <span>Statistics</span>
+            </li>
+            <li class="sidebar-tab" data-tab="export">
+                <span class="tab-icon">💾</span>
+                <span>Export</span>
+            </li>
+            <li class="sidebar-tab" data-tab="settings">
+                <span class="tab-icon">⚙️</span>
+                <span>Settings</span>
+            </li>
+        </ul>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Table Tab Content -->
+        <div class="tab-content active" id="table-tab">
+            <div class="content-header">
+                <h1 class="content-title">The Magical Table</h1>
+                <p class="content-subtitle">Advanced table with pagination, sorting, filtering, and customizable columns</p>
+            </div>
+            
+            <div class="magical-table-container">
+                <!-- Table Controls -->
+                <div class="table-controls">
+                    <div class="controls-row">
+                        <div class="controls-left">
+                            <div class="control-group">
+                                <label class="control-label">Rows per page:</label>
+                                <select class="control-select" id="rowsPerPage">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="all">All</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label class="control-label">Search:</label>
+                                <input type="text" class="search-box" id="searchBox" placeholder="Search in all columns...">
+                            </div>
+                        </div>
+                        
+                        <div class="controls-right">
+                            <button class="btn btn-secondary" id="customizeColumns">
+                                <span>🔧</span>
+                                Customize Columns
+                            </button>
+                            <button class="btn btn-primary" id="resetTable">
+                                <span>🔄</span>
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Column Customization -->
+                    <div class="column-customizer" id="columnCustomizer" style="display: none;">
+                        <h4>Column Management</h4>
+                        <p>Drag to reorder, click to toggle visibility</p>
+                        <div class="column-list" id="columnList">
+                            {% for column in column_names %}
+                                <div class="column-item" data-column="{{ column }}">
+                                    <span class="column-toggle">👁️</span>
+                                    <span>{{ column }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Table -->
+                <div class="table-wrapper">
+                    <table class="magical-table" id="magicalTable">
+                        <thead>
+                            <tr>
+                                {% for column in column_names %}
+                                    <th class="sortable" data-column="{{ column }}">
+                                        {{ column }}
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            {% for row in table_data %}
+                                <tr>
+                                    {% for column in column_names %}
+                                        <td>
+                                            {% if row|get_item:column == None or row|get_item:column == '' %}
+                                                <span style="color: #cbd5e0; font-style: italic;">null</span>
+                                            {% else %}
+                                                {{ row|get_item:column }}
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <div class="pagination-info">
+                        Showing <span id="startRow">1</span> to <span id="endRow">25</span> of <span id="totalRows">{{ file_info.rows|floatformat:0 }}</span> entries
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" id="prevPage" disabled>Previous</button>
+                        <div id="pageNumbers"></div>
+                        <button class="page-btn" id="nextPage">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Other Tab Contents -->
+        <div class="tab-content" id="charts-tab">
+            <div class="content-header">
+                <h1 class="content-title">Charts & Visualizations</h1>
+                <p class="content-subtitle">Coming soon...</p>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="statistics-tab">
+            <div class="content-header">
+                <h1 class="content-title">Statistical Analysis</h1>
+                <p class="content-subtitle">Coming soon...</p>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="export-tab">
+            <div class="content-header">
+                <h1 class="content-title">Export Data</h1>
+                <p class="content-subtitle">Coming soon...</p>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="settings-tab">
+            <div class="content-header">
+                <h1 class="content-title">Table Settings</h1>
+                <p class="content-subtitle">Coming soon...</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Analayzee</h3>
+            <p>Your trusted partner for data analysis and insights. Making data science accessible to everyone.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Features</h3>
+            <p><a href="#">Data Analysis</a></p>
+            <p><a href="#">Visualization</a></p>
+            <p><a href="#">Export Options</a></p>
+            <p><a href="#">Advanced Analytics</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Support</h3>
+            <p><a href="#">Documentation</a></p>
+            <p><a href="#">Help Center</a></p>
+            <p><a href="#">Contact Us</a></p>
+            <p><a href="#">FAQ</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Legal</h3>
+            <p><a href="#">Privacy Policy</a></p>
+            <p><a href="#">Terms of Service</a></p>
+            <p><a href="#">Cookie Policy</a></p>
+            <p><a href="#">GDPR</a></p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Analayzee. All rights reserved.</p>
+    </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/analysis.js' %}"></script>
+{% endblock %} 
