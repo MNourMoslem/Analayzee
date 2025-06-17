@@ -24,7 +24,7 @@ def showcase_view(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', showcase_view, name='showcase'),
-    path('showcase/', showcase_view, name='showcase'),
+    path('', include('main.urls')),  # Main app (home page, analysis, etc.)
     path('accounts/', include('accounts.urls')),
+    path('showcase/', showcase_view, name='showcase'),  # Component showcase
 ]
