@@ -95,7 +95,7 @@ class UserSessionAdmin(admin.ModelAdmin):
     list_display = ('user', 'session_id', 'ip_address', 'login_time', 'logout_time', 'is_active')
     list_filter = ('is_active', 'login_time')
     search_fields = ('user__email', 'user__username', 'session_id')
-    readonly_fields = ('session_id', 'login_time', 'created_at')
+    readonly_fields = ('session_id', 'login_time')
     ordering = ('-login_time',)
     
     fieldsets = (
@@ -106,7 +106,7 @@ class UserSessionAdmin(admin.ModelAdmin):
             'fields': ('ip_address', 'user_agent')
         }),
         ('Timestamps', {
-            'fields': ('login_time', 'logout_time', 'created_at'),
+            'fields': ('login_time', 'logout_time'),
             'classes': ('collapse',)
         }),
     )

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
@@ -15,6 +15,8 @@ from .forms import (
     ChangePasswordForm
 )
 from .models import User, get_free_subscription_type
+import pandas as pd
+from .utils import set_dataframe_in_store, get_dataframe_from_store, clear_dataframe_store
 
 
 def signup_view(request):
@@ -222,4 +224,47 @@ def subscription_context(request):
         'user_subscription_status': 'free',
         'user_is_premium': False,
         'user_is_free': True,
-    } 
+    }
+
+
+# === DEBUG STORE SHOWCASE VIEWS ===
+@csrf_exempt
+def debug_store_upload(request):
+    """Upload a CSV and store as DataFrame in session store."""
+    context = {'title': 'Debug Store: Upload CSV'}
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        csv_file = request.FILES['csv_file']
+        try:
+            df = pd.read_csv(csv_file)
+            set_dataframe_in_store(request, df)
+            context['success'] = True
+            context['columns'] = list(df.columns)
+            context['rows'] = len(df)
+        except Exception as e:
+            context['error'] = f'Failed to read CSV: {e}'
+    return render(request, 'accounts/debug_store_upload.html', context)
+
+
+def debug_store_view(request):
+    """View the DataFrame stored in the session store."""
+    df = get_dataframe_from_store(request)
+    context = {'title': 'Debug Store: View DataFrame'}
+    if df is not None:
+        context['columns'] = list(df.columns)
+        context['rows'] = len(df)
+        context['head_html'] = df.head(20).to_html(classes='table table-striped', index=False)
+        context['info'] = str(df.info(buf=None))
+    else:
+        context['error'] = 'No DataFrame in store. Please upload a CSV first.'
+    return render(request, 'accounts/debug_store_view.html', context)
+
+
+def debug_store_clear(request):
+    """Clear the DataFrame from the session store."""
+    clear_dataframe_store(request)
+    return render(request, 'accounts/debug_store_clear.html', {'title': 'Debug Store: Cleared'})
+
+
+def debug_store_nav(request):
+    """Navigation page for debug store showcases."""
+    return render(request, 'accounts/debug_store_nav.html', {'title': 'Debug Store: Navigation'}) 
