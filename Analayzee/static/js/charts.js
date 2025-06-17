@@ -5,6 +5,7 @@ class ChartsManager {
         this.columns = [];
         this.charts = new Map();
         this.currentCharts = [];
+        this.chartMetadata = new Map(); // Store metadata for each chart
         this.chartColors = [
             '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
             '#ef4444', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
@@ -393,13 +394,21 @@ class ChartsManager {
         const chartCard = document.createElement('div');
         chartCard.className = 'chart-card';
         chartCard.setAttribute('data-chart-type', chartType);
+        chartCard.setAttribute('data-chart-id', chartId);
         
         const chartTitle = this.getChartTitle(chartType, xAxis, yAxis);
         
         chartCard.innerHTML = `
             <div class="chart-header">
-                <h3 class="chart-title">${chartTitle}</h3>
-                <p class="chart-subtitle">${this.getChartSubtitle(chartType, xAxis, yAxis)}</p>
+                <div class="chart-header-content">
+                    <h3 class="chart-title">${chartTitle}</h3>
+                    <p class="chart-subtitle">${this.getChartSubtitle(chartType, xAxis, yAxis)}</p>
+                </div>
+                <button class="chart-delete-btn" onclick="window.chartsManager.deleteChart('${chartId}')" title="Delete chart">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
             <div class="chart-body">
                 <div class="chart-container">
@@ -427,7 +436,51 @@ class ChartsManager {
             
             this.charts.set(chartId, chart);
             this.currentCharts.push(chartId);
+            
+            // Store chart metadata
+            this.chartMetadata.set(chartId, {
+                type: chartType,
+                xAxis: xAxis,
+                yAxis: yAxis,
+                title: chartTitle,
+                subtitle: this.getChartSubtitle(chartType, xAxis, yAxis)
+            });
         }
+    }
+    
+    deleteChart(chartId) {
+        // Find the chart card
+        const chartCard = document.querySelector(`[data-chart-id="${chartId}"]`);
+        if (!chartCard) return;
+        
+        // Add fade-out animation
+        chartCard.style.transition = 'all 0.3s ease-out';
+        chartCard.style.transform = 'scale(0.95)';
+        chartCard.style.opacity = '0';
+        
+        // Remove after animation
+        setTimeout(() => {
+            // Destroy the Chart.js instance
+            const chart = this.charts.get(chartId);
+            if (chart) {
+                chart.destroy();
+                this.charts.delete(chartId);
+            }
+            
+            // Remove from tracking arrays
+            const index = this.currentCharts.indexOf(chartId);
+            if (index > -1) {
+                this.currentCharts.splice(index, 1);
+            }
+            
+            // Remove metadata
+            this.chartMetadata.delete(chartId);
+            
+            // Remove from DOM
+            chartCard.remove();
+            
+            this.showSuccess('Chart deleted successfully');
+        }, 300);
     }
     
     getChartTitle(chartType, xAxis, yAxis) {
@@ -539,6 +592,7 @@ class ChartsManager {
         // Clear tracking
         this.charts.clear();
         this.currentCharts = [];
+        this.chartMetadata.clear();
     }
     
     exportCharts() {
