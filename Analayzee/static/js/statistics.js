@@ -7,6 +7,7 @@ class StatisticsManager {
         this.categoricalColumns = [];
         this.statistics = {};
         this.currentAnalysis = null;
+        this.generatedAnalyses = []; // Store all generated analyses with their data
         
         this.initializeEventListeners();
         this.loadData();
@@ -203,24 +204,38 @@ class StatisticsManager {
         this.currentAnalysis = { type: analysisType, column: column };
         
         try {
+            let analysisData = null;
+            
             switch (analysisType) {
                 case 'descriptive':
-                    this.generateDescriptiveStatistics(column);
+                    analysisData = this.generateDescriptiveStatistics(column);
                     break;
                 case 'correlation':
-                    this.generateCorrelationMatrix();
+                    analysisData = this.generateCorrelationMatrix();
                     break;
                 case 'outliers':
-                    this.generateOutlierAnalysis(column);
+                    analysisData = this.generateOutlierAnalysis(column);
                     break;
                 case 'distribution':
-                    this.generateDistributionAnalysis(column);
+                    analysisData = this.generateDistributionAnalysis(column);
                     break;
                 case 'insights':
-                    this.generateDataInsights();
+                    analysisData = this.generateDataInsights();
                     break;
                 default:
-                    this.generateDescriptiveStatistics(column);
+                    analysisData = this.generateDescriptiveStatistics(column);
+            }
+            
+            // Store the analysis data
+            if (analysisData) {
+                this.generatedAnalyses.push({
+                    id: analysisData.id,
+                    type: analysisType,
+                    column: column,
+                    data: analysisData.data,
+                    title: analysisData.title,
+                    subtitle: analysisData.subtitle
+                });
             }
         } catch (error) {
             console.error('Error generating statistics:', error);
@@ -232,48 +247,93 @@ class StatisticsManager {
         const values = this.getNumericValues(column);
         if (values.length === 0) {
             this.showError('No numeric data available for this column');
-            return;
+            return null;
         }
         
         const stats = this.calculateDescriptiveStats(values);
-        this.renderDescriptiveStatistics(column, stats);
+        const cardId = `descriptive-${Date.now()}`;
+        
+        this.renderDescriptiveStatistics(column, stats, cardId);
+        
+        return {
+            id: cardId,
+            data: stats,
+            title: 'Descriptive Statistics',
+            subtitle: `Column: ${column}`
+        };
     }
     
     generateCorrelationMatrix() {
         if (this.numericColumns.length < 2) {
             this.showError('Need at least 2 numeric columns for correlation analysis');
-            return;
+            return null;
         }
         
         const correlationMatrix = this.calculateCorrelationMatrix();
-        this.renderCorrelationMatrix(correlationMatrix);
+        const cardId = `correlation-${Date.now()}`;
+        
+        this.renderCorrelationMatrix(correlationMatrix, cardId);
+        
+        return {
+            id: cardId,
+            data: correlationMatrix,
+            title: 'Correlation Matrix',
+            subtitle: 'Pearson correlation coefficients between numeric variables'
+        };
     }
     
     generateOutlierAnalysis(column) {
         const values = this.getNumericValues(column);
         if (values.length === 0) {
             this.showError('No numeric data available for this column');
-            return;
+            return null;
         }
         
         const outliers = this.detectOutliers(values);
-        this.renderOutlierAnalysis(column, outliers);
+        const cardId = `outliers-${Date.now()}`;
+        
+        this.renderOutlierAnalysis(column, outliers, cardId);
+        
+        return {
+            id: cardId,
+            data: outliers,
+            title: 'Outlier Detection',
+            subtitle: `Column: ${column} (${outliers.count} outliers, ${outliers.percentage}%)`
+        };
     }
     
     generateDistributionAnalysis(column) {
         const values = this.getNumericValues(column);
         if (values.length === 0) {
             this.showError('No numeric data available for this column');
-            return;
+            return null;
         }
         
         const distribution = this.calculateDistribution(values);
-        this.renderDistributionAnalysis(column, distribution);
+        const cardId = `distribution-${Date.now()}`;
+        
+        this.renderDistributionAnalysis(column, distribution, cardId);
+        
+        return {
+            id: cardId,
+            data: distribution,
+            title: 'Distribution Analysis',
+            subtitle: `Column: ${column} (${distribution.bins.length} bins)`
+        };
     }
     
     generateDataInsights() {
         const insights = this.generateInsights();
-        this.renderDataInsights(insights);
+        const cardId = `insights-${Date.now()}`;
+        
+        this.renderDataInsights(insights, cardId);
+        
+        return {
+            id: cardId,
+            data: insights,
+            title: 'Data Insights',
+            subtitle: 'Automated analysis and recommendations'
+        };
     }
     
     getNumericValues(column) {
@@ -543,11 +603,10 @@ class StatisticsManager {
         return { strongCorrelations };
     }
     
-    renderDescriptiveStatistics(column, stats) {
+    renderDescriptiveStatistics(column, stats, cardId) {
         const statisticsGrid = document.getElementById('statisticsGrid');
         if (!statisticsGrid) return;
         
-        const cardId = `descriptive-${Date.now()}`;
         const card = document.createElement('div');
         card.className = 'statistics-card';
         card.setAttribute('data-stat-type', 'descriptive');
@@ -584,11 +643,10 @@ class StatisticsManager {
         statisticsGrid.appendChild(card);
     }
     
-    renderCorrelationMatrix(matrix) {
+    renderCorrelationMatrix(matrix, cardId) {
         const statisticsGrid = document.getElementById('statisticsGrid');
         if (!statisticsGrid) return;
         
-        const cardId = `correlation-${Date.now()}`;
         const card = document.createElement('div');
         card.className = 'statistics-card';
         card.setAttribute('data-stat-type', 'correlation');
@@ -636,15 +694,9 @@ class StatisticsManager {
         return 'correlation-strong-negative';
     }
     
-    renderOutlierAnalysis(column, outlierResult) {
+    renderOutlierAnalysis(column, outlierResult, cardId) {
         const statisticsGrid = document.getElementById('statisticsGrid');
         if (!statisticsGrid) return;
-        
-        const cardId = `outliers-${Date.now()}`;
-        const card = document.createElement('div');
-        card.className = 'statistics-card';
-        card.setAttribute('data-stat-type', 'outliers');
-        card.id = cardId;
         
         let outliersHTML = '';
         if (outlierResult.outliers.length > 0) {
@@ -660,6 +712,11 @@ class StatisticsManager {
             outliersHTML = '<p>No outliers detected in this column.</p>';
         }
         
+        const card = document.createElement('div');
+        card.className = 'statistics-card';
+        card.setAttribute('data-stat-type', 'outliers');
+        card.id = cardId;
+        
         card.innerHTML = `
             <div class="statistics-card-header">
                 <h3 class="statistics-card-title">Outlier Detection</h3>
@@ -674,15 +731,9 @@ class StatisticsManager {
         statisticsGrid.appendChild(card);
     }
     
-    renderDistributionAnalysis(column, distribution) {
+    renderDistributionAnalysis(column, distribution, cardId) {
         const statisticsGrid = document.getElementById('statisticsGrid');
         if (!statisticsGrid) return;
-        
-        const cardId = `distribution-${Date.now()}`;
-        const card = document.createElement('div');
-        card.className = 'statistics-card';
-        card.setAttribute('data-stat-type', 'distribution');
-        card.id = cardId;
         
         let distributionHTML = '<table class="statistics-table">';
         distributionHTML += '<thead><tr><th>Bin Range</th><th>Frequency</th><th>Percentage</th></tr></thead><tbody>';
@@ -701,6 +752,11 @@ class StatisticsManager {
         
         distributionHTML += '</tbody></table>';
         
+        const card = document.createElement('div');
+        card.className = 'statistics-card';
+        card.setAttribute('data-stat-type', 'distribution');
+        card.id = cardId;
+        
         card.innerHTML = `
             <div class="statistics-card-header">
                 <h3 class="statistics-card-title">Distribution Analysis</h3>
@@ -715,11 +771,10 @@ class StatisticsManager {
         statisticsGrid.appendChild(card);
     }
     
-    renderDataInsights(insights) {
+    renderDataInsights(insights, cardId) {
         const statisticsGrid = document.getElementById('statisticsGrid');
         if (!statisticsGrid) return;
         
-        const cardId = `insights-${Date.now()}`;
         const card = document.createElement('div');
         card.className = 'statistics-card';
         card.setAttribute('data-stat-type', 'insights');
@@ -759,11 +814,15 @@ class StatisticsManager {
             statisticsGrid.innerHTML = '';
         }
         this.currentAnalysis = null;
+        this.generatedAnalyses = []; // Clear stored analyses
     }
     
     deleteAnalysis(cardId) {
         const card = document.getElementById(cardId);
         if (card) {
+            // Remove from stored analyses
+            this.generatedAnalyses = this.generatedAnalyses.filter(analysis => analysis.id !== cardId);
+            
             // Add fade-out animation
             card.style.transition = 'all 0.3s ease';
             card.style.opacity = '0';
@@ -777,62 +836,141 @@ class StatisticsManager {
     }
     
     exportStatistics() {
-        if (!this.currentAnalysis) {
+        if (this.generatedAnalyses.length === 0) {
             this.showError('No statistics to export');
             return;
         }
         
         try {
-            // Create a simple text report
-            let report = `Statistics Report - ${this.currentAnalysis.type}\n`;
-            report += `Column: ${this.currentAnalysis.column}\n`;
-            report += `Generated: ${new Date().toLocaleString()}\n\n`;
+            // Create a comprehensive report with all analyses
+            let report = `Analayzee Statistics Report\n`;
+            report += `Generated: ${new Date().toLocaleString()}\n`;
+            report += `Dataset: ${this.columns.length} columns, ${this.data ? this.data.length : 0} rows\n`;
+            report += `${'='.repeat(50)}\n\n`;
             
-            // Add specific statistics based on analysis type
-            switch (this.currentAnalysis.type) {
-                case 'descriptive':
-                    const values = this.getNumericValues(this.currentAnalysis.column);
-                    const stats = this.calculateDescriptiveStats(values);
-                    report += `Descriptive Statistics:\n`;
-                    Object.entries(stats).forEach(([key, value]) => {
-                        report += `${key}: ${value}\n`;
-                    });
-                    break;
-                case 'correlation':
-                    const matrix = this.calculateCorrelationMatrix();
-                    report += `Correlation Matrix:\n`;
-                    this.numericColumns.forEach(col1 => {
-                        this.numericColumns.forEach(col2 => {
-                            report += `${col1}-${col2}: ${matrix[col1][col2].toFixed(3)}\n`;
-                        });
-                    });
-                    break;
-                case 'outliers':
-                    const values2 = this.getNumericValues(this.currentAnalysis.column);
-                    const outliers = this.detectOutliers(values2);
-                    report += `Outlier Analysis:\n`;
-                    report += `Total outliers: ${outliers.count}\n`;
-                    report += `Percentage: ${outliers.percentage}%\n`;
-                    outliers.outliers.forEach(outlier => {
-                        report += `Row ${outlier.index + 1}: ${outlier.value}\n`;
-                    });
-                    break;
-            }
+            // Export each stored analysis
+            this.generatedAnalyses.forEach((analysis, index) => {
+                report += `\n${index + 1}. ${analysis.title}\n`;
+                report += `Type: ${analysis.type}\n`;
+                if (analysis.subtitle) {
+                    report += `Details: ${analysis.subtitle}\n`;
+                }
+                report += `${'-'.repeat(30)}\n`;
+                
+                // Export data based on analysis type
+                switch (analysis.type) {
+                    case 'descriptive':
+                        report += this.exportDescriptiveDataFromStored(analysis.data);
+                        break;
+                    case 'correlation':
+                        report += this.exportCorrelationDataFromStored(analysis.data);
+                        break;
+                    case 'outliers':
+                        report += this.exportOutlierDataFromStored(analysis.data);
+                        break;
+                    case 'distribution':
+                        report += this.exportDistributionDataFromStored(analysis.data);
+                        break;
+                    case 'insights':
+                        report += this.exportInsightsDataFromStored(analysis.data);
+                        break;
+                }
+                
+                report += `\n`;
+            });
+            
+            // Add summary
+            report += `\n${'='.repeat(50)}\n`;
+            report += `SUMMARY\n`;
+            report += `${'='.repeat(50)}\n`;
+            report += `Total Analyses: ${this.generatedAnalyses.length}\n`;
+            report += `Analysis Types: ${[...new Set(this.generatedAnalyses.map(a => a.type))].join(', ')}\n`;
+            report += `Export Date: ${new Date().toLocaleString()}\n`;
             
             // Create download
             const blob = new Blob([report], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `statistics-${this.currentAnalysis.type}-${Date.now()}.txt`;
+            link.download = `analayzee-statistics-report-${Date.now()}.txt`;
             link.click();
             URL.revokeObjectURL(url);
             
-            this.showSuccess('Statistics exported successfully');
+            this.showSuccess(`Exported ${this.generatedAnalyses.length} analyses successfully`);
         } catch (error) {
             console.error('Error exporting statistics:', error);
             this.showError('Failed to export statistics');
         }
+    }
+    
+    exportDescriptiveDataFromStored(stats) {
+        let output = `Descriptive Statistics:\n`;
+        Object.entries(stats).forEach(([key, value]) => {
+            output += `${key}: ${value}\n`;
+        });
+        return output;
+    }
+    
+    exportCorrelationDataFromStored(matrix) {
+        let output = `Correlation Matrix:\n`;
+        output += `Column\t`;
+        this.numericColumns.forEach(col => {
+            output += `${col}\t`;
+        });
+        output += `\n`;
+        
+        this.numericColumns.forEach(col1 => {
+            output += `${col1}\t`;
+            this.numericColumns.forEach(col2 => {
+                const value = matrix[col1][col2];
+                output += `${value.toFixed(3)}\t`;
+            });
+            output += `\n`;
+        });
+        return output;
+    }
+    
+    exportOutlierDataFromStored(outlierResult) {
+        let output = `Outlier Analysis:\n`;
+        output += `Total outliers: ${outlierResult.count}\n`;
+        output += `Percentage: ${outlierResult.percentage}%\n`;
+        output += `Lower bound: ${outlierResult.bounds.lower.toFixed(4)}\n`;
+        output += `Upper bound: ${outlierResult.bounds.upper.toFixed(4)}\n`;
+        
+        if (outlierResult.outliers.length > 0) {
+            output += `Outlier Details:\n`;
+            outlierResult.outliers.forEach(outlier => {
+                output += `Row ${outlier.index + 1}: ${outlier.value.toFixed(4)} (${outlier.type})\n`;
+            });
+        } else {
+            output += `No outliers detected.\n`;
+        }
+        return output;
+    }
+    
+    exportDistributionDataFromStored(distribution) {
+        let output = `Distribution Analysis:\n`;
+        output += `Number of bins: ${distribution.bins.length}\n`;
+        output += `Bin size: ${distribution.binSize.toFixed(4)}\n\n`;
+        
+        distribution.labels.forEach((label, index) => {
+            const frequency = distribution.bins[index];
+            const percentage = ((frequency / distribution.bins.reduce((a, b) => a + b, 0)) * 100).toFixed(2);
+            output += `${label}: ${frequency} (${percentage}%)\n`;
+        });
+        return output;
+    }
+    
+    exportInsightsDataFromStored(insights) {
+        let output = `Data Insights:\n`;
+        if (insights.length > 0) {
+            insights.forEach(insight => {
+                output += `${insight.title}: ${insight.description}\n`;
+            });
+        } else {
+            output += `No specific insights available.\n`;
+        }
+        return output;
     }
     
     showError(message) {
