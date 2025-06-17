@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Debug Store: Upload CSV{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 40px auto;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Upload CSV to Store</h2>
+            <p class="card-subtitle">Upload a CSV file and store it as a pandas DataFrame in your session.</p>
+        </div>
+        <div class="card-body">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+                <div class="alert alert-success">
+                    DataFrame stored!<br>
+                    <strong>Columns:</strong> {{ columns|join:', ' }}<br>
+                    <strong>Rows:</strong> {{ rows }}<br>
+                    <a href="{% url 'accounts:debug_store_view' %}" class="btn btn-success mt-2">View DataFrame</a>
+                </div>
+            {% endif %}
+            <form method="post" enctype="multipart/form-data" class="mt-4">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="csv_file">CSV File</label>
+                    <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">Upload & Store</button>
+            </form>
+        </div>
+    </div>
+    <div class="mt-4 text-center">
+        <a href="{% url 'accounts:debug_store_nav' %}" class="btn btn-outline btn-secondary">Back to Debug Navigation</a>
+    </div>
+</div>
+{% endblock %} 

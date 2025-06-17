@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Debug Store Navigation{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 40px auto;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Debug Store Showcase Navigation</h2>
+            <p class="card-subtitle">Navigate between debug pages to test the DataFrame store system.</p>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-primary btn-block">Upload CSV to Store</a>
+                </li>
+                <li class="list-group-item">
+                    <a href="{% url 'accounts:debug_store_view' %}" class="btn btn-secondary btn-block">View DataFrame in Store</a>
+                </li>
+                <li class="list-group-item">
+                    <a href="{% url 'accounts:debug_store_clear' %}" class="btn btn-danger btn-block">Clear Store</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %} 

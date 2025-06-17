@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Debug Store: Cleared{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 40px auto;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Store Cleared</h2>
+            <p class="card-subtitle">The DataFrame has been removed from your session store.</p>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-success">Store cleared successfully.</div>
+            <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-primary">Upload New CSV</a>
+            <a href="{% url 'accounts:debug_store_nav' %}" class="btn btn-outline btn-secondary">Back to Debug Navigation</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

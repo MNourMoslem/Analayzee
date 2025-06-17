@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Debug Store: View DataFrame{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 40px auto;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">View DataFrame in Store</h2>
+            <p class="card-subtitle">See the DataFrame currently stored in your session.</p>
+        </div>
+        <div class="card-body">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% else %}
+                <div class="mb-3">
+                    <strong>Columns:</strong> {{ columns|join:', ' }}<br>
+                    <strong>Rows:</strong> {{ rows }}
+                </div>
+                <div class="mb-3">
+                    <h4>DataFrame Head (first 20 rows):</h4>
+                    <div style="overflow-x: auto;">
+                        {{ head_html|safe }}
+                    </div>
+                </div>
+            {% endif %}
+            <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-secondary">Upload New CSV</a>
+            <a href="{% url 'accounts:debug_store_clear' %}" class="btn btn-danger">Clear Store</a>
+        </div>
+    </div>
+    <div class="mt-4 text-center">
+        <a href="{% url 'accounts:debug_store_nav' %}" class="btn btn-outline btn-secondary">Back to Debug Navigation</a>
+    </div>
+</div>
+{% endblock %} 
