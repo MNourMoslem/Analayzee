@@ -1,25 +1,160 @@
 {% extends 'base.html' %}
-{% block title %}Debug Store Navigation{% endblock %}
+{% load static %}
+
+{% block title %}Debug Store Navigation - Analayzee{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 600px; margin: 40px auto;">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Debug Store Showcase Navigation</h2>
-            <p class="card-subtitle">Navigate between debug pages to test the DataFrame store system.</p>
-        </div>
-        <div class="card-body">
-            <ul class="list-group">
-                <li class="list-group-item">
-                    <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-primary btn-block">Upload CSV to Store</a>
-                </li>
-                <li class="list-group-item">
-                    <a href="{% url 'accounts:debug_store_view' %}" class="btn btn-secondary btn-block">View DataFrame in Store</a>
-                </li>
-                <li class="list-group-item">
-                    <a href="{% url 'accounts:debug_store_clear' %}" class="btn btn-danger btn-block">Clear Store</a>
-                </li>
-            </ul>
+<!-- Top Navigation Bar -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <a href="{% url 'main:home' %}" class="nav-brand">Analayzee</a>
+        <div class="nav-actions">
+            {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="#" class="nav-btn dropdown-toggle">
+                        {{ user.first_name|default:user.username }}
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{% url 'accounts:profile' %}" class="dropdown-item">Profile</a>
+                        <a href="{% url 'accounts:subscription' %}" class="dropdown-item">Subscription</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'accounts:logout' %}" class="dropdown-item">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'accounts:login' %}" class="nav-btn">Login</a>
+                <a href="{% url 'accounts:signup' %}" class="nav-btn primary">Sign Up</a>
+            {% endif %}
+            <a href="{% url 'showcase' %}" class="nav-btn">Components</a>
         </div>
     </div>
+</nav>
+
+<div style="max-width:800px; margin:0 auto; padding:2rem;">
+    <div style="text-align:center; margin-bottom:3rem;">
+        <h1 style="font-size:2rem; font-weight:700; color:#111; margin-bottom:0.5rem;">Debug Store Navigation</h1>
+        <p style="font-size:1rem; color:#555;">Manage session store data for debugging and testing</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding:0.75rem; margin-bottom:1.5rem; border:1px solid #eee; border-radius:6px; background:#f5f5f5; color:#111; font-size:0.95rem;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:2rem; margin-bottom:3rem;">
+        <div class="card">
+            <div class="card-header">
+                <h2 style="font-size:1.2rem; font-weight:600; color:#111;">Upload Data</h2>
+            </div>
+            <div class="card-body">
+                <p style="font-size:0.95rem; color:#555; margin-bottom:1.5rem;">
+                    Upload CSV or Excel files to the session store for testing and debugging purposes.
+                </p>
+                <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-primary" style="width:100%;">
+                    Upload Files
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 style="font-size:1.2rem; font-weight:600; color:#111;">View Data</h2>
+            </div>
+            <div class="card-body">
+                <p style="font-size:0.95rem; color:#555; margin-bottom:1.5rem;">
+                    View and inspect the DataFrame data currently stored in your session.
+                </p>
+                <a href="{% url 'accounts:debug_store_view' %}" class="btn btn-secondary" style="width:100%;">
+                    View Data
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 style="font-size:1.2rem; font-weight:600; color:#111;">Clear Data</h2>
+            </div>
+            <div class="card-body">
+                <p style="font-size:0.95rem; color:#555; margin-bottom:1.5rem;">
+                    Remove all stored DataFrame data from your session to start fresh.
+                </p>
+                <a href="{% url 'accounts:debug_store_clear' %}" class="btn btn-secondary" style="width:100%;">
+                    Clear Store
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Information -->
+    <div class="card">
+        <div class="card-header">
+            <h2 style="font-size:1.2rem; font-weight:600; color:#111;">Session Information</h2>
+        </div>
+        <div class="card-body">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem;">
+                <div>
+                    <div style="font-size:0.9rem; color:#888; margin-bottom:0.25rem;">Session ID</div>
+                    <div style="font-size:1rem; font-weight:600; color:#111; font-family:monospace;">{{ session_id|default:"Not available" }}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.9rem; color:#888; margin-bottom:0.25rem;">Data Keys</div>
+                    <div style="font-size:1rem; font-weight:600; color:#111;">{{ data_keys|default:"None" }}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.9rem; color:#888; margin-bottom:0.25rem;">Store Status</div>
+                    <div style="font-size:1rem; font-weight:600; color:#111;">
+                        {% if has_data %}
+                            Has Data
+                        {% else %}
+                            Empty
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:2rem; text-align:center;">
+        <a href="{% url 'main:home' %}" class="btn btn-secondary">
+            Back to Home
+        </a>
+    </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Analayzee</h3>
+            <p>Your trusted partner for data analysis and insights. Making data science accessible to everyone.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Features</h3>
+            <p><a href="#">Data Analysis</a></p>
+            <p><a href="#">Visualization</a></p>
+            <p><a href="#">Export Options</a></p>
+            <p><a href="#">Advanced Analytics</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Support</h3>
+            <p><a href="#">Documentation</a></p>
+            <p><a href="#">Help Center</a></p>
+            <p><a href="#">Contact Us</a></p>
+            <p><a href="#">FAQ</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Legal</h3>
+            <p><a href="#">Privacy Policy</a></p>
+            <p><a href="#">Terms of Service</a></p>
+            <p><a href="#">Cookie Policy</a></p>
+            <p><a href="#">GDPR</a></p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Analayzee. All rights reserved.</p>
+    </div>
+</footer>
 {% endblock %} 

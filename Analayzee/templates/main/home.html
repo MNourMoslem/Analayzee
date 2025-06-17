@@ -4,311 +4,7 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
-<style>
-    /* Top Navigation Bar */
-    .top-nav {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem 2rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-    
-    .nav-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .nav-brand {
-        color: white;
-        font-size: 1.5rem;
-        font-weight: 700;
-        text-decoration: none;
-    }
-    
-    .nav-brand:hover {
-        color: white;
-        text-decoration: none;
-    }
-    
-    .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-    
-    .nav-btn {
-        color: white;
-        text-decoration: none;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-    
-    .nav-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .nav-btn.primary {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .nav-btn.primary:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-    
-    /* Main Content */
-    .hero-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 4rem 2rem;
-        text-align: center;
-        min-height: 60vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
-    .hero-title {
-        font-size: 3rem;
-        font-weight: 700;
-        color: #1a202c;
-        margin-bottom: 1rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.25rem;
-        color: #4a5568;
-        margin-bottom: 3rem;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-        line-height: 1.6;
-    }
-    
-    /* File Upload Section */
-    .upload-section {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-    
-    .upload-card {
-        background: white;
-        border-radius: 16px;
-        padding: 3rem 2rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        border: 2px dashed #cbd5e0;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        text-align: center;
-    }
-    
-    .upload-card:hover,
-    .upload-card.drag-over {
-        border-color: #667eea;
-        background: #f7fafc;
-        transform: translateY(-2px);
-    }
-    
-    .upload-icon {
-        font-size: 4rem;
-        color: #667eea;
-        margin-bottom: 1rem;
-    }
-    
-    .upload-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .upload-subtitle {
-        color: #718096;
-        margin-bottom: 2rem;
-    }
-    
-    .upload-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .upload-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    
-    .file-input {
-        display: none;
-    }
-    
-    .file-info {
-        margin-top: 1rem;
-        padding: 1rem;
-        background: #f7fafc;
-        border-radius: 8px;
-        display: none;
-    }
-    
-    .file-info.show {
-        display: block;
-    }
-    
-    .file-name {
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .file-size {
-        color: #718096;
-        font-size: 0.875rem;
-    }
-    
-    /* Features Section */
-    .features-section {
-        padding: 4rem 2rem;
-        background: white;
-    }
-    
-    .features-grid {
-        max-width: 1200px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2rem;
-    }
-    
-    .feature-card {
-        text-align: center;
-        padding: 2rem;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    }
-    
-    .feature-icon {
-        font-size: 3rem;
-        color: #667eea;
-        margin-bottom: 1rem;
-    }
-    
-    .feature-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .feature-description {
-        color: #718096;
-        line-height: 1.6;
-    }
-    
-    /* Footer */
-    .footer {
-        background: #1a202c;
-        color: white;
-        padding: 3rem 2rem 1rem;
-    }
-    
-    .footer-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .footer-section h3 {
-        color: #667eea;
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
-    }
-    
-    .footer-section p,
-    .footer-section a {
-        color: #a0aec0;
-        text-decoration: none;
-        line-height: 1.6;
-    }
-    
-    .footer-section a:hover {
-        color: #667eea;
-    }
-    
-    .footer-bottom {
-        border-top: 1px solid #2d3748;
-        padding-top: 1rem;
-        text-align: center;
-        color: #718096;
-    }
-    
-    /* Loading State */
-    .loading {
-        display: none;
-        margin-top: 1rem;
-    }
-    
-    .loading.show {
-        display: block;
-    }
-    
-    .spinner {
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #667eea;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 1rem;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-        .hero-title {
-            font-size: 2rem;
-        }
-        
-        .nav-container {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .upload-card {
-            padding: 2rem 1rem;
-        }
-        
-        .features-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -321,7 +17,7 @@
             {% if user.is_authenticated %}
                 <div class="dropdown">
                     <a href="#" class="nav-btn dropdown-toggle">
-                        👤 {{ user.first_name|default:user.username }}
+                        {{ user.first_name|default:user.username }}
                     </a>
                     <div class="dropdown-menu">
                         <a href="{% url 'accounts:profile' %}" class="dropdown-item">Profile</a>
@@ -334,90 +30,66 @@
                 <a href="{% url 'accounts:login' %}" class="nav-btn">Login</a>
                 <a href="{% url 'accounts:signup' %}" class="nav-btn primary">Sign Up</a>
             {% endif %}
-            <a href="{% url 'showcase' %}" class="nav-btn">🧪 Components</a>
+            <a href="{% url 'showcase' %}" class="nav-btn">Components</a>
         </div>
     </div>
 </nav>
 
 <!-- Hero Section -->
-<section class="hero-section">
-    <h1 class="hero-title">Analyze Your Data with Ease</h1>
-    <p class="hero-subtitle">
-        Upload your CSV or Excel files and get instant insights. 
+<section class="hero-section" style="padding: 4rem 0 2rem 0; text-align: center;">
+    <h1 class="hero-title" style="font-size:2.5rem; font-weight:700; color:#111; margin-bottom:1rem;">Analyze Your Data with Ease</h1>
+    <p class="hero-subtitle" style="font-size:1.1rem; color:#555; margin-bottom:2.5rem;">
+        Upload your CSV or Excel files and get instant insights.<br>
         No registration required for basic analysis. Advanced features available for premium users.
     </p>
-    
     <!-- File Upload Section -->
-    <div class="upload-section">
-        <div class="upload-card" id="uploadCard">
-            <div class="upload-icon">📊</div>
-            <h2 class="upload-title">Drag & Drop Your File</h2>
-            <p class="upload-subtitle">
+    <div class="upload-section" style="display:flex; justify-content:center;">
+        <div class="upload-card card" id="uploadCard" style="max-width:400px; width:100%;">
+            <h2 class="upload-title" style="font-size:1.25rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Drag & Drop Your File</h2>
+            <p class="upload-subtitle" style="font-size:0.95rem; color:#888; margin-bottom:1.5rem;">
                 Support for CSV, Excel (.xlsx, .xls) files up to 10MB
             </p>
-            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                Choose File
-            </button>
-            <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
-            
-            <div class="file-info" id="fileInfo">
-                <div class="file-name" id="fileName"></div>
-                <div class="file-size" id="fileSize"></div>
-                <button class="upload-btn" id="submitBtn" style="margin-top:1rem; display:none;">Submit</button>
+            <button class="upload-btn btn btn-secondary" onclick="document.getElementById('fileInput').click()" style="width:100%; margin-bottom:1rem;">Choose File</button>
+            <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls" style="display:none;">
+            <div class="file-info" id="fileInfo" style="display:none;">
+                <div class="file-name" id="fileName" style="font-size:0.95rem; color:#111;"></div>
+                <div class="file-size" id="fileSize" style="font-size:0.9rem; color:#888;"></div>
+                <button class="upload-btn btn btn-primary" id="submitBtn" style="margin-top:1rem; display:none; width:100%;">Submit</button>
             </div>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Processing your file...</p>
+            <div class="loading" id="loading" style="display:none;">
+                <div class="spinner" style="margin:1rem auto;"></div>
+                <p style="font-size:0.95rem; color:#888;">Processing your file...</p>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="features-section">
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🚀</div>
-            <h3 class="feature-title">Fast Analysis</h3>
-            <p class="feature-description">
-                Get instant insights from your data with our powerful analysis engine.
-            </p>
+<section class="features-section" style="padding:2rem 0 0 0;">
+    <div class="features-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; max-width:1100px; margin:0 auto;">
+        <div class="feature-card card" style="padding:1.5rem;">
+            <h3 class="feature-title" style="font-size:1.1rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Fast Analysis</h3>
+            <p class="feature-description" style="font-size:0.95rem; color:#555;">Get instant insights from your data with our powerful analysis engine.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">📈</div>
-            <h3 class="feature-title">Visual Insights</h3>
-            <p class="feature-description">
-                Beautiful charts and graphs to help you understand your data better.
-            </p>
+        <div class="feature-card card" style="padding:1.5rem;">
+            <h3 class="feature-title" style="font-size:1.1rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Visual Insights</h3>
+            <p class="feature-description" style="font-size:0.95rem; color:#555;">Simple, clear tables and stats to help you understand your data better.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🔒</div>
-            <h3 class="feature-title">Secure & Private</h3>
-            <p class="feature-description">
-                Your data is processed locally and never stored on our servers.
-            </p>
+        <div class="feature-card card" style="padding:1.5rem;">
+            <h3 class="feature-title" style="font-size:1.1rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Secure & Private</h3>
+            <p class="feature-description" style="font-size:0.95rem; color:#555;">Your data is processed locally and never stored on our servers.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">💡</div>
-            <h3 class="feature-title">Smart Suggestions</h3>
-            <p class="feature-description">
-                Get intelligent recommendations for data cleaning and analysis.
-            </p>
+        <div class="feature-card card" style="padding:1.5rem;">
+            <h3 class="feature-title" style="font-size:1.1rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Smart Suggestions</h3>
+            <p class="feature-description" style="font-size:0.95rem; color:#555;">Get intelligent recommendations for data cleaning and analysis.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3 class="feature-title">Multiple Formats</h3>
-            <p class="feature-description">
-                Support for CSV, Excel, and other popular data formats.
-            </p>
+        <div class="feature-card card" style="padding:1.5rem;">
+            <h3 class="feature-title" style="font-size:1.1rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Multiple Formats</h3>
+            <p class="feature-description" style="font-size:0.95rem; color:#555;">Support for CSV, Excel, and other popular data formats.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🎯</div>
-            <h3 class="feature-title">Advanced Features</h3>
-            <p class="feature-description">
-                Premium users get access to advanced analytics and export options.
-            </p>
+        <div class="feature-card card" style="padding:1.5rem;">
+            <h3 class="feature-title" style="font-size:1.1rem; font-weight:600; color:#111; margin-bottom:0.5rem;">Advanced Features</h3>
+            <p class="feature-description" style="font-size:0.95rem; color:#555;">Premium users get access to advanced analytics and export options.</p>
         </div>
     </div>
 </section>
@@ -500,78 +172,14 @@
         // Show file info
         fileName.textContent = file.name;
         fileSize.textContent = formatFileSize(file.size);
-        fileInfo.classList.add('show');
+        fileInfo.style.display = 'block';
         submitBtn.style.display = 'inline-block';
         selectedFile = file;
-        
-        // Check file type
-        const allowedTypes = ['.csv', '.xlsx', '.xls'];
-        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-        
-        if (!allowedTypes.includes(fileExtension)) {
-            ComponentLib.showAlert(`Unsupported file type. Please upload: ${allowedTypes.join(', ')}`, 'error');
-            submitBtn.disabled = true;
-            return;
-        }
-        
-        // Check file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-            ComponentLib.showAlert('File size too large. Please upload a file smaller than 10MB.', 'error');
-            submitBtn.disabled = true;
-            return;
-        }
-        submitBtn.disabled = false;
     }
-
-    submitBtn.addEventListener('click', function() {
-        if (selectedFile) {
-            uploadFile(selectedFile);
-        }
-    });
-
-    function uploadFile(file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // Show loading
-        loading.classList.add('show');
-        submitBtn.disabled = true;
-        
-        fetch('{% url "main:upload_file" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                return response.text();
-            }
-        })
-        .then(data => {
-            if (data) {
-                ComponentLib.showAlert('Upload failed. Please try again.', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            ComponentLib.showAlert('Upload failed. Please try again.', 'error');
-        })
-        .finally(() => {
-            loading.classList.remove('show');
-            submitBtn.disabled = false;
-        });
-    }
-
     function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        if (bytes < 1024) return bytes + ' B';
+        else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        else return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 </script>
 {% endblock %} 

@@ -2,10 +2,14 @@
 {% load static %}
 {% load main_extras %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Data Analysis - Analayzee{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/magical-table.css' %}">
+<link rel="stylesheet" href="{% static 'css/column-analysis.css' %}">
 <link rel="stylesheet" href="{% static 'css/analysis.css' %}">
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<link rel="stylesheet" href="{% static 'css/charts.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -21,7 +25,7 @@
             {% if user.is_authenticated %}
                 <div class="dropdown">
                     <a href="#" class="nav-btn dropdown-toggle">
-                        👤 {{ user.first_name|default:user.username }}
+                        {{ user.first_name|default:user.username }}
                     </a>
                     <div class="dropdown-menu">
                         <a href="{% url 'accounts:profile' %}" class="dropdown-item">Profile</a>
@@ -34,212 +38,179 @@
                 <a href="{% url 'accounts:login' %}" class="nav-btn">Login</a>
                 <a href="{% url 'accounts:signup' %}" class="nav-btn primary">Sign Up</a>
             {% endif %}
-            <a href="{% url 'showcase' %}" class="nav-btn">🧪 Components</a>
+            <a href="{% url 'showcase' %}" class="nav-btn">Components</a>
         </div>
     </div>
 </nav>
 
-<!-- Main Layout -->
-<div class="analysis-layout">
+<div class="analysis-page">
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <div class="sidebar">
         <div class="sidebar-header">
-            <h2 class="sidebar-title">Analysis Tools</h2>
-            <p class="sidebar-subtitle">Explore your data with powerful tools</p>
+            <h2>Analysis Tools</h2>
         </div>
-        
         <ul class="sidebar-tabs">
-            <li class="sidebar-tab active" data-tab="table">
-                <span class="tab-icon">📊</span>
-                <span>Table</span>
-            </li>
-            <li class="sidebar-tab" data-tab="charts">
-                <span class="tab-icon">📈</span>
-                <span>Charts</span>
-            </li>
-            <li class="sidebar-tab" data-tab="statistics">
-                <span class="tab-icon">📋</span>
-                <span>Statistics</span>
-            </li>
-            <li class="sidebar-tab" data-tab="export">
-                <span class="tab-icon">💾</span>
-                <span>Export</span>
-            </li>
-            <li class="sidebar-tab" data-tab="settings">
-                <span class="tab-icon">⚙️</span>
-                <span>Settings</span>
-            </li>
+            <li class="sidebar-tab active" data-tab="table">Table</li>
+            <li class="sidebar-tab" data-tab="column-analysis">Column Analysis</li>
+            <li class="sidebar-tab" data-tab="charts">Charts</li>
+            <li class="sidebar-tab" data-tab="statistics">Statistics</li>
+            <li class="sidebar-tab" data-tab="export">Export</li>
+            <li class="sidebar-tab" data-tab="settings">Settings</li>
         </ul>
-    </aside>
-    
+    </div>
     <!-- Main Content -->
-    <main class="main-content">
+    <div class="main-content">
         <!-- Table Tab Content -->
         <div class="tab-content active" id="table-tab">
             <div class="content-header">
                 <h1 class="content-title">The Magical Table</h1>
-                <p class="content-subtitle">Advanced table with pagination, sorting, filtering, and customizable columns</p>
+                <p class="content-subtitle">Advanced data table with sorting, filtering, and pagination</p>
             </div>
-            
             <div class="magical-table-container">
-                <!-- Table Controls -->
                 <div class="table-controls">
-                    <div class="controls-row">
-                        <div class="controls-left">
-                            <div class="control-group">
-                                <label class="control-label">Rows per page:</label>
-                                <select class="control-select" id="rowsPerPage">
-                                    <option value="10">10</option>
-                                    <option value="25" selected>25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                    <option value="all">All</option>
-                                </select>
-                            </div>
-                            
-                            <div class="control-group">
-                                <label class="control-label">Search:</label>
-                                <input type="text" class="search-box" id="searchBox" placeholder="Search in all columns...">
-                            </div>
-                        </div>
-                        
-                        <div class="controls-right">
-                            <button class="btn btn-secondary" id="customizeColumns">
-                                <span>🔧</span>
-                                Customize Columns
-                            </button>
-                            <button class="btn btn-primary" id="resetTable">
-                                <span>🔄</span>
-                                Reset
-                            </button>
-                        </div>
+                    <div class="control-group">
+                        <label for="rowsPerPage">Rows per page:</label>
+                        <select id="rowsPerPage">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">All</option>
+                        </select>
                     </div>
-                    
-                    <!-- Column Customization -->
-                    <div class="column-customizer" id="columnCustomizer" style="display: none;">
-                        <h4>Column Management</h4>
-                        <p>Drag to reorder, click to toggle visibility</p>
-                        <div class="column-list" id="columnList">
+                    <div class="control-group">
+                        <label for="searchBox">Search:</label>
+                        <input type="text" id="searchBox" placeholder="Search in all columns...">
+                    </div>
+                    <div class="table-actions">
+                        <button id="customizeColumns" class="btn btn-secondary">Customize Columns</button>
+                        <button id="resetTable" class="btn btn-primary">Reset</button>
+                    </div>
+                </div>
+                <div id="columnCustomizer" class="column-customizer">
+                    <h4>Toggle Columns</h4>
+                    {% for column in column_names %}
+                    <div class="column-item" data-column="{{ column }}">
+                        <div class="column-toggle"></div>
+                        <span>{{ column }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <table class="magical-table">
+                    <thead>
+                        <tr>
                             {% for column in column_names %}
-                                <div class="column-item" data-column="{{ column }}">
-                                    <span class="column-toggle">👁️</span>
-                                    <span>{{ column }}</span>
-                                </div>
+                            <th class="sortable" data-column="{{ column }}">{{ column }}</th>
                             {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Table -->
-                <div class="table-wrapper">
-                    <table class="magical-table" id="magicalTable">
-                        <thead>
-                            <tr>
-                                {% for column in column_names %}
-                                    <th class="sortable" data-column="{{ column }}">
-                                        {{ column }}
-                                    </th>
-                                {% endfor %}
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            {% for row in table_data %}
-                                <tr>
-                                    {% for column in column_names %}
-                                        <td>
-                                            {% if row|get_item:column == None or row|get_item:column == '' %}
-                                                <span style="color: #cbd5e0; font-style: italic;">null</span>
-                                            {% else %}
-                                                {{ row|get_item:column }}
-                                            {% endif %}
-                                        </td>
-                                    {% endfor %}
-                                </tr>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_data %}
+                        <tr>
+                            {% for column in column_names %}
+                            <td>{{ row|get_item:column|default:"" }}</td>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Pagination -->
-                <div class="pagination">
-                    <div class="pagination-info">
-                        Showing <span id="startRow">1</span> to <span id="endRow">25</span> of <span id="totalRows">{{ file_info.rows|floatformat:0 }}</span> entries
-                    </div>
-                    <div class="pagination-controls">
-                        <button class="page-btn" id="prevPage" disabled>Previous</button>
-                        <div id="pageNumbers"></div>
-                        <button class="page-btn" id="nextPage">Next</button>
-                    </div>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="table-footer">
+                    <div id="tableInfo" class="table-info">Showing 1 to 25 of {{ file_info.rows|floatformat:0 }} entries</div>
+                    <div id="pagination" class="pagination"></div>
                 </div>
             </div>
         </div>
-        
-        <!-- Other Tab Contents -->
+        <!-- Column Analysis Tab Content -->
+        <div class="tab-content" id="column-analysis-tab">
+            <div class="content-header">
+                <h1 class="content-title">Column Analysis</h1>
+                <p class="content-subtitle">Detailed statistical analysis and mathematical insights for each column</p>
+            </div>
+            <div class="column-analysis-container">
+                <div class="analysis-grid" id="columnAnalysisGrid">
+                    <!-- Column cards will be dynamically generated here -->
+                </div>
+            </div>
+        </div>
+        <!-- Charts Tab Content -->
         <div class="tab-content" id="charts-tab">
             <div class="content-header">
-                <h1 class="content-title">Charts & Visualizations</h1>
-                <p class="content-subtitle">Coming soon...</p>
+                <h1 class="content-title">Data Visualization</h1>
+                <p class="content-subtitle">Create interactive charts and visualizations from your data</p>
+            </div>
+            <div class="charts-container">
+                <div class="charts-header">
+                    <h2 class="charts-title">Chart Builder</h2>
+                    <p class="charts-subtitle">Select chart type and data columns to create visualizations</p>
+                </div>
+                <div class="charts-controls">
+                    <div class="chart-control-group">
+                        <label for="chartType">Chart Type</label>
+                        <select id="chartType">
+                            <option value="bar">Bar Chart</option>
+                            <option value="line">Line Chart</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="doughnut">Doughnut Chart</option>
+                            <option value="scatter">Scatter Plot</option>
+                            <option value="histogram">Histogram</option>
+                        </select>
+                    </div>
+                    <div class="chart-control-group">
+                        <label for="xAxis">X-Axis</label>
+                        <select id="xAxis">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="chart-control-group">
+                        <label for="yAxis">Y-Axis</label>
+                        <select id="yAxis">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="charts-actions">
+                        <button id="createChart" class="btn btn-primary">Create Chart</button>
+                        <button id="resetCharts" class="btn btn-secondary">Reset All</button>
+                        <button id="exportCharts" class="btn btn-secondary">Export</button>
+                    </div>
+                </div>
+                <div class="charts-content">
+                    <div class="chart-grid" id="chartGrid">
+                        <!-- Charts will be dynamically generated here -->
+                    </div>
+                </div>
             </div>
         </div>
-        
+        <!-- Other Tab Contents -->
         <div class="tab-content" id="statistics-tab">
             <div class="content-header">
-                <h1 class="content-title">Statistical Analysis</h1>
-                <p class="content-subtitle">Coming soon...</p>
+                <h1 class="content-title">Statistics</h1>
+                <p class="content-subtitle">Comprehensive statistical overview</p>
             </div>
+            <p>Statistics functionality coming soon...</p>
         </div>
-        
         <div class="tab-content" id="export-tab">
             <div class="content-header">
-                <h1 class="content-title">Export Data</h1>
-                <p class="content-subtitle">Coming soon...</p>
+                <h1 class="content-title">Export</h1>
+                <p class="content-subtitle">Export your data in various formats</p>
             </div>
+            <p>Export functionality coming soon...</p>
         </div>
-        
         <div class="tab-content" id="settings-tab">
             <div class="content-header">
-                <h1 class="content-title">Table Settings</h1>
-                <p class="content-subtitle">Coming soon...</p>
+                <h1 class="content-title">Settings</h1>
+                <p class="content-subtitle">Configure your analysis preferences</p>
             </div>
+            <p>Settings functionality coming soon...</p>
         </div>
-    </main>
+    </div>
 </div>
-
-<!-- Footer -->
-<footer class="footer">
-    <div class="footer-content">
-        <div class="footer-section">
-            <h3>Analayzee</h3>
-            <p>Your trusted partner for data analysis and insights. Making data science accessible to everyone.</p>
-        </div>
-        <div class="footer-section">
-            <h3>Features</h3>
-            <p><a href="#">Data Analysis</a></p>
-            <p><a href="#">Visualization</a></p>
-            <p><a href="#">Export Options</a></p>
-            <p><a href="#">Advanced Analytics</a></p>
-        </div>
-        <div class="footer-section">
-            <h3>Support</h3>
-            <p><a href="#">Documentation</a></p>
-            <p><a href="#">Help Center</a></p>
-            <p><a href="#">Contact Us</a></p>
-            <p><a href="#">FAQ</a></p>
-        </div>
-        <div class="footer-section">
-            <h3>Legal</h3>
-            <p><a href="#">Privacy Policy</a></p>
-            <p><a href="#">Terms of Service</a></p>
-            <p><a href="#">Cookie Policy</a></p>
-            <p><a href="#">GDPR</a></p>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <p>&copy; 2024 Analayzee. All rights reserved.</p>
-    </div>
-</footer>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/tab-switching.js' %}"></script>
+<script src="{% static 'js/magical-table.js' %}"></script>
+<script src="{% static 'js/column-analysis.js' %}"></script>
+<script src="{% static 'js/charts.js' %}"></script>
 <script src="{% static 'js/analysis.js' %}"></script>
 {% endblock %} 

@@ -1,17 +1,116 @@
 {% extends 'base.html' %}
-{% block title %}Debug Store: Cleared{% endblock %}
+{% load static %}
+
+{% block title %}Debug Store Clear - Analayzee{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 600px; margin: 40px auto;">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Store Cleared</h2>
-            <p class="card-subtitle">The DataFrame has been removed from your session store.</p>
-        </div>
-        <div class="card-body">
-            <div class="alert alert-success">Store cleared successfully.</div>
-            <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-primary">Upload New CSV</a>
-            <a href="{% url 'accounts:debug_store_nav' %}" class="btn btn-outline btn-secondary">Back to Debug Navigation</a>
+<!-- Top Navigation Bar -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <a href="{% url 'main:home' %}" class="nav-brand">Analayzee</a>
+        <div class="nav-actions">
+            {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="#" class="nav-btn dropdown-toggle">
+                        {{ user.first_name|default:user.username }}
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{% url 'accounts:profile' %}" class="dropdown-item">Profile</a>
+                        <a href="{% url 'accounts:subscription' %}" class="dropdown-item">Subscription</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'accounts:logout' %}" class="dropdown-item">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'accounts:login' %}" class="nav-btn">Login</a>
+                <a href="{% url 'accounts:signup' %}" class="nav-btn primary">Sign Up</a>
+            {% endif %}
+            <a href="{% url 'showcase' %}" class="nav-btn">Components</a>
         </div>
     </div>
+</nav>
+
+<div style="max-width:600px; margin:0 auto; padding:2rem;">
+    <div style="text-align:center; margin-bottom:3rem;">
+        <h1 style="font-size:2rem; font-weight:700; color:#111; margin-bottom:0.5rem;">Clear Session Store</h1>
+        <p style="font-size:1rem; color:#555;">Remove all stored DataFrame data from your session</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding:0.75rem; margin-bottom:1.5rem; border:1px solid #eee; border-radius:6px; background:#f5f5f5; color:#111; font-size:0.95rem;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h2 style="font-size:1.2rem; font-weight:600; color:#111;">Clear Session Data</h2>
+        </div>
+        <div class="card-body">
+            <p style="font-size:1rem; color:#555; margin-bottom:2rem;">
+                This will permanently remove all DataFrame data stored in your session. This action cannot be undone.
+            </p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div style="display:flex; gap:1rem; justify-content:center;">
+                    <button type="submit" class="btn btn-secondary" name="cancel" value="cancel">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" name="clear" value="clear">
+                        Clear All Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div style="margin-top:2rem; display:flex; gap:1rem; justify-content:center;">
+        <a href="{% url 'accounts:debug_store_view' %}" class="btn btn-secondary">
+            View Data
+        </a>
+        <a href="{% url 'accounts:debug_store_upload' %}" class="btn btn-secondary">
+            Upload Data
+        </a>
+        <a href="{% url 'accounts:debug_store_nav' %}" class="btn btn-secondary">
+            Debug Navigation
+        </a>
+    </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Analayzee</h3>
+            <p>Your trusted partner for data analysis and insights. Making data science accessible to everyone.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Features</h3>
+            <p><a href="#">Data Analysis</a></p>
+            <p><a href="#">Visualization</a></p>
+            <p><a href="#">Export Options</a></p>
+            <p><a href="#">Advanced Analytics</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Support</h3>
+            <p><a href="#">Documentation</a></p>
+            <p><a href="#">Help Center</a></p>
+            <p><a href="#">Contact Us</a></p>
+            <p><a href="#">FAQ</a></p>
+        </div>
+        <div class="footer-section">
+            <h3>Legal</h3>
+            <p><a href="#">Privacy Policy</a></p>
+            <p><a href="#">Terms of Service</a></p>
+            <p><a href="#">Cookie Policy</a></p>
+            <p><a href="#">GDPR</a></p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Analayzee. All rights reserved.</p>
+    </div>
+</footer>
 {% endblock %} 

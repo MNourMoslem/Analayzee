@@ -90,3 +90,37 @@ def api_file_info(request):
         'data_types': df.dtypes.astype(str).to_dict(),
         'missing_values': df.isnull().sum().to_dict(),
     })
+
+
+def api_charts_data(request):
+    """API endpoint to get data specifically for charts"""
+    df = get_dataframe_from_store(request)
+    
+    if df is None:
+        return JsonResponse({'error': 'No file data found'}, status=404)
+    
+    try:
+        # Get column information for chart types
+        numeric_columns = []
+        categorical_columns = []
+        
+        for column in df.columns:
+            if pd.api.types.is_numeric_dtype(df[column]):
+                numeric_columns.append(column)
+            else:
+                categorical_columns.append(column)
+        
+        return JsonResponse({
+            'success': True,
+            'data': df.to_dict('records'),
+            'columns': list(df.columns),
+            'numeric_columns': numeric_columns,
+            'categorical_columns': categorical_columns,
+            'total_rows': len(df),
+            'total_columns': len(df.columns)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Error processing data: {str(e)}'
+        }, status=500)
