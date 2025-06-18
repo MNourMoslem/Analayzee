@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize statistics functionality
     initializeStatistics();
     
+    // Initialize data cleaning
+    initializeDataCleaning();
+    
     // Set up tab-specific initializations
     setupTabInitializations();
 });

@@ -878,103 +878,110 @@
     font-weight: 500;
 }
 
-/* Premium Tab Styling */
+/* Premium Tab Styling - Black & White Theme */
 .premium-tab {
     position: relative;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: 2px solid #fbbf24;
-    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
-    transform: translateY(-1px);
+    background: #f8f8f8;
+    border: 2px solid #000000;
+    border-radius: 8px;
+    margin: 0.5rem 0.75rem;
+    transition: all 0.3s ease;
 }
 
 .premium-tab:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-    border-color: #f59e0b;
-    box-shadow: 0 6px 16px rgba(251, 191, 36, 0.4);
-    transform: translateY(-2px);
+    background: #000000;
+    color: #ffffff;
+    transform: translateX(4px) scale(1.02);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .premium-tab.active {
-    background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
-    border-color: #d97706;
-    box-shadow: 0 8px 20px rgba(251, 191, 36, 0.5);
-    transform: translateY(-2px);
+    background: #000000;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transform: translateX(4px);
 }
 
 .premium-tab .tab-content {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    width: 100%;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .premium-icon {
-    font-size: 1rem;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+    color: inherit;
 }
 
 .premium-badge {
     position: absolute;
     top: -8px;
     right: -8px;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: #92400e;
-    font-size: 0.6rem;
+    background: #000000;
+    color: #ffffff;
+    font-size: 0.7rem;
     font-weight: 700;
-    padding: 0.2rem 0.4rem;
-    border-radius: 8px;
-    border: 1px solid #d97706;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid #ffffff;
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-    0%, 100% {
+    0% {
         transform: scale(1);
-        opacity: 1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     50% {
         transform: scale(1.05);
-        opacity: 0.8;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 }
 
-/* Premium tab glow effect */
 .premium-tab::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, #fbbf24, #f59e0b, #d97706, #fbbf24);
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #000000;
+    border-radius: 0 2px 2px 0;
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
 }
 
-.premium-tab:hover::before {
-    opacity: 0.3;
+.premium-tab:hover::before,
+.premium-tab.active::before {
+    transform: scaleY(1);
 }
 
-/* Responsive adjustments for premium tab */
 @media (max-width: 768px) {
     .premium-tab .tab-content {
-        font-size: 0.875rem;
+        flex-direction: column;
+        gap: 0.25rem;
     }
     
     .premium-icon {
-        font-size: 0.875rem;
+        margin-right: 0;
+        margin-bottom: 0.25rem;
     }
     
     .premium-badge {
-        font-size: 0.5rem;
-        padding: 0.15rem 0.3rem;
-        top: -6px;
-        right: -6px;
+        font-size: 0.6rem;
+        padding: 0.15rem 0.4rem;
     }
 } 
