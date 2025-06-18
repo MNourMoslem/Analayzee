@@ -282,6 +282,100 @@
                     </div>
                 </div>
             </div>
+            <!-- Missing Values Configuration -->
+            <div id="missingValuesConfig" class="operation-config" style="display: none;">
+                <div class="config-group">
+                    <label for="fillMethod">Fill Method</label>
+                    <select id="fillMethod">
+                        <option value="mean">Mean</option>
+                        <option value="median">Median</option>
+                        <option value="mode">Mode</option>
+                        <option value="zero">Zero</option>
+                        <option value="custom">Custom Value</option>
+                        <option value="drop">Drop Rows</option>
+                    </select>
+                </div>
+                <div id="customValueGroup" class="config-group" style="display: none;">
+                    <label for="customValue">Custom Value</label>
+                    <input type="text" id="customValue" placeholder="Enter custom value">
+                </div>
+            </div>
+
+            <!-- Outliers Configuration -->
+            <div id="outliersConfig" class="operation-config" style="display: none;">
+                <div class="config-group">
+                    <label for="outlierMethod">Detection Method</label>
+                    <select id="outlierMethod">
+                        <option value="iqr">IQR Method</option>
+                        <option value="zscore">Z-Score Method</option>
+                        <option value="percentile">Percentile Method</option>
+                    </select>
+                </div>
+                <div class="config-group">
+                    <label for="outlierAction">Action</label>
+                    <select id="outlierAction">
+                        <option value="remove">Remove Outliers</option>
+                        <option value="cap">Cap at Threshold</option>
+                        <option value="mark">Mark as Outlier</option>
+                    </select>
+                </div>
+                <div class="config-group">
+                    <label for="outlierThreshold">Threshold (1.5 for IQR, 3 for Z-Score, 95 for Percentile)</label>
+                    <input type="number" id="outlierThreshold" value="1.5" step="0.1" min="0">
+                </div>
+            </div>
+
+            <!-- Data Type Configuration -->
+            <div id="dataTypeConfig" class="operation-config" style="display: none;">
+                <div class="config-group">
+                    <label for="targetDataType">Target Data Type</label>
+                    <select id="targetDataType">
+                        <option value="number">Number</option>
+                        <option value="text">Text</option>
+                        <option value="date">Date</option>
+                        <option value="boolean">Boolean</option>
+                    </select>
+                </div>
+                <div class="config-group">
+                    <label for="dateFormat">Date Format (if converting to date)</label>
+                    <input type="text" id="dateFormat" placeholder="YYYY-MM-DD" value="YYYY-MM-DD">
+                </div>
+            </div>
+
+            <!-- Text Cleaning Configuration -->
+            <div id="textCleaningConfig" class="operation-config" style="display: none;">
+                <div class="config-group">
+                    <label>Text Operations</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="removeSpecialChars"> Remove Special Characters</label>
+                        <label><input type="checkbox" id="convertToLowercase"> Convert to Lowercase</label>
+                        <label><input type="checkbox" id="removeExtraSpaces"> Remove Extra Spaces</label>
+                        <label><input type="checkbox" id="trimWhitespace"> Trim Whitespace</label>
+                        <label><input type="checkbox" id="removeNumbers"> Remove Numbers</label>
+                    </div>
+                </div>
+                <div class="config-group">
+                    <label for="customReplacements">Custom Replacements (comma-separated: old=new)</label>
+                    <textarea id="customReplacements" placeholder="old1=new1,old2=new2"></textarea>
+                </div>
+            </div>
+
+            <!-- Duplicates Configuration -->
+            <div id="duplicatesConfig" class="operation-config" style="display: none;">
+                <div class="config-group">
+                    <label for="duplicateAction">Action</label>
+                    <select id="duplicateAction">
+                        <option value="remove">Remove All Duplicates</option>
+                        <option value="keep_first">Keep First Occurrence</option>
+                        <option value="keep_last">Keep Last Occurrence</option>
+                        <option value="mark">Mark Duplicates</option>
+                    </select>
+                </div>
+                <div class="config-group">
+                    <label for="duplicateColumns">Columns to Check (leave empty for all columns)</label>
+                    <input type="text" id="duplicateColumns" placeholder="column1,column2,column3">
+                </div>
+            </div>
             {% else %}
             <div class="auth-required-container">
                 <div class="auth-required-content">

@@ -1,13 +1,13 @@
 // Data Cleaning Premium Functionality
 class DataCleaningManager {
     constructor() {
-        this.data = [];
+        this.originalData = []; // Backup of original data
+        this.data = []; // Current working data
         this.columns = [];
         this.cleaningHistory = [];
         this.currentOperation = null;
-        this.operationConfig = {};
         
-        console.log('DataCleaningManager initialized'); // Debug
+        console.log('DataCleaningManager initialized');
         
         this.loadData();
         this.initializeEventListeners();
@@ -15,41 +15,11 @@ class DataCleaningManager {
         // Debug: Check if data was loaded
         setTimeout(() => {
             console.log('DataCleaningManager data check:', {
-                dataLength: this.data.length,
-                columnsLength: this.columns.length,
-                sampleData: this.data.slice(0, 2)
+                originalDataLength: this.originalData.length,
+                currentDataLength: this.data.length,
+                columnsLength: this.columns.length
             });
         }, 1000);
-    }
-    
-    initializeEventListeners() {
-        // Column selection
-        const columnSelect = document.getElementById('cleaningColumn');
-        if (columnSelect) {
-            columnSelect.addEventListener('change', () => this.onColumnChange());
-        }
-        
-        // Operation selection
-        const operationSelect = document.getElementById('cleaningOperation');
-        if (operationSelect) {
-            operationSelect.addEventListener('change', () => this.onOperationChange());
-        }
-        
-        // Action buttons
-        const applyBtn = document.getElementById('applyCleaning');
-        if (applyBtn) {
-            applyBtn.addEventListener('click', () => this.applyCleaning());
-        }
-        
-        const resetBtn = document.getElementById('resetCleaning');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetCleaning());
-        }
-        
-        const previewBtn = document.getElementById('previewCleaning');
-        if (previewBtn) {
-            previewBtn.addEventListener('click', () => this.previewCleaning());
-        }
     }
     
     loadData() {
@@ -63,12 +33,15 @@ class DataCleaningManager {
                 return;
             }
             
-            this.data = tableData;
+            // Store original data as backup
+            this.originalData = JSON.parse(JSON.stringify(tableData));
+            this.data = JSON.parse(JSON.stringify(tableData)); // Working copy
             this.columns = tableColumns;
             
             this.populateColumnSelect();
             console.log('Data loaded for cleaning:', {
-                rows: this.data.length,
+                originalRows: this.originalData.length,
+                currentRows: this.data.length,
                 columns: this.columns.length
             });
             
@@ -89,6 +62,45 @@ class DataCleaningManager {
             option.value = column;
             option.textContent = column;
             columnSelect.appendChild(option);
+        });
+    }
+    
+    initializeEventListeners() {
+        // Column selection
+        const columnSelect = document.getElementById('cleaningColumn');
+        if (columnSelect) {
+            columnSelect.addEventListener('change', () => this.onColumnChange());
+        }
+        
+        // Operation selection
+        const operationSelect = document.getElementById('cleaningOperation');
+        if (operationSelect) {
+            operationSelect.addEventListener('change', () => this.onOperationChange());
+        }
+        
+        // Apply operation button
+        const applyButton = document.getElementById('applyCleaning');
+        if (applyButton) {
+            applyButton.addEventListener('click', () => this.applyCleaning());
+        }
+        
+        // Preview button
+        const previewButton = document.getElementById('previewCleaning');
+        if (previewButton) {
+            previewButton.addEventListener('click', () => this.previewCleaning());
+        }
+        
+        // Reset button
+        const resetButton = document.getElementById('resetCleaning');
+        if (resetButton) {
+            resetButton.addEventListener('click', () => this.resetCleaning());
+        }
+        
+        // Listen for missing action changes
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'missingAction') {
+                this.toggleCustomValueInput();
+            }
         });
     }
     
@@ -165,18 +177,6 @@ class DataCleaningManager {
             case 'missing-values':
                 configHTML = this.getMissingValuesConfig();
                 break;
-            case 'outliers':
-                configHTML = this.getOutliersConfig();
-                break;
-            case 'data-type':
-                configHTML = this.getDataTypeConfig();
-                break;
-            case 'text-cleaning':
-                configHTML = this.getTextCleaningConfig();
-                break;
-            case 'duplicates':
-                configHTML = this.getDuplicatesConfig();
-                break;
             case 'normalize':
                 configHTML = this.getNormalizeConfig();
                 break;
@@ -189,6 +189,11 @@ class DataCleaningManager {
                     ${configHTML}
                 </div>
             `;
+            
+            // Initialize custom value input visibility
+            if (operation === 'missing-values') {
+                this.toggleCustomValueInput();
+            }
         }
         
         this.currentOperation = operation;
@@ -214,102 +219,6 @@ class DataCleaningManager {
         `;
     }
     
-    getOutliersConfig() {
-        return `
-            <div class="config-group">
-                <label for="outlierMethod">Detection Method:</label>
-                <select id="outlierMethod">
-                    <option value="iqr">IQR Method</option>
-                    <option value="zscore">Z-Score Method</option>
-                    <option value="percentile">Percentile Method</option>
-                </select>
-            </div>
-            <div class="config-group">
-                <label for="outlierAction">Action:</label>
-                <select id="outlierAction">
-                    <option value="cap">Cap Outliers</option>
-                    <option value="remove">Remove Outliers</option>
-                    <option value="mark">Mark as Outlier</option>
-                </select>
-            </div>
-            <div class="config-group">
-                <label for="outlierThreshold">Threshold:</label>
-                <input type="number" id="outlierThreshold" value="1.5" step="0.1" min="0.1">
-            </div>
-        `;
-    }
-    
-    getDataTypeConfig() {
-        return `
-            <div class="config-group">
-                <label for="targetType">Target Data Type:</label>
-                <select id="targetType">
-                    <option value="int">Integer</option>
-                    <option value="float">Float</option>
-                    <option value="string">String</option>
-                    <option value="datetime">DateTime</option>
-                    <option value="boolean">Boolean</option>
-                </select>
-            </div>
-            <div class="config-group">
-                <label for="conversionMethod">Conversion Method:</label>
-                <select id="conversionMethod">
-                    <option value="strict">Strict (Fail on Error)</option>
-                    <option value="coerce">Coerce (Use Defaults)</option>
-                    <option value="ignore">Ignore Errors</option>
-                </select>
-            </div>
-        `;
-    }
-    
-    getTextCleaningConfig() {
-        return `
-            <div class="config-group">
-                <label for="textOperations">Text Operations:</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="lowercase" checked> Convert to Lowercase</label>
-                    <label><input type="checkbox" id="removeSpecial"> Remove Special Characters</label>
-                    <label><input type="checkbox" id="removeNumbers"> Remove Numbers</label>
-                    <label><input type="checkbox" id="trimWhitespace" checked> Trim Whitespace</label>
-                    <label><input type="checkbox" id="removeDuplicates"> Remove Duplicate Words</label>
-                </div>
-            </div>
-            <div class="config-group">
-                <label for="customReplacements">Custom Replacements:</label>
-                <textarea id="customReplacements" placeholder="old_text:new_text&#10;another_old:another_new" rows="3"></textarea>
-            </div>
-        `;
-    }
-    
-    getDuplicatesConfig() {
-        return `
-            <div class="config-group">
-                <label for="duplicateScope">Scope:</label>
-                <select id="duplicateScope">
-                    <option value="all">All Columns</option>
-                    <option value="selected">Selected Column Only</option>
-                    <option value="subset">Subset of Columns</option>
-                </select>
-            </div>
-            <div class="config-group">
-                <label for="duplicateAction">Action:</label>
-                <select id="duplicateAction">
-                    <option value="remove">Remove Duplicates</option>
-                    <option value="mark">Mark as Duplicate</option>
-                    <option value="count">Count Duplicates</option>
-                </select>
-            </div>
-            <div class="config-group">
-                <label for="keepOption">Keep Option:</label>
-                <select id="keepOption">
-                    <option value="first">Keep First</option>
-                    <option value="last">Keep Last</option>
-                    <option value="none">Keep None</option>
-                </select>
-            </div>
-        `;
-    }
-    
     getNormalizeConfig() {
         return `
             <div class="config-group">
@@ -318,11 +227,10 @@ class DataCleaningManager {
                     <option value="minmax">Min-Max Scaling (0-1)</option>
                     <option value="zscore">Z-Score Standardization</option>
                     <option value="robust">Robust Scaling</option>
-                    <option value="decimal">Decimal Scaling</option>
                 </select>
             </div>
             <div class="config-group">
-                <label for="normalizeRange">Target Range:</label>
+                <label for="normalizeRange">Target Range (Min-Max only):</label>
                 <div class="range-inputs">
                     <input type="number" id="rangeMin" value="0" placeholder="Min">
                     <span>to</span>
@@ -366,6 +274,11 @@ class DataCleaningManager {
             return;
         }
         
+        if (!this.isNumericColumn(column)) {
+            this.showError('This operation only works with numeric columns');
+            return;
+        }
+        
         this.showLoading();
         
         try {
@@ -390,20 +303,12 @@ class DataCleaningManager {
     
     applyCleaningLocally(column, operation, config) {
         try {
-            // Create a copy of the data
+            // Create a copy of the current data
             const cleanedData = JSON.parse(JSON.stringify(this.data));
             
             switch (operation) {
                 case 'missing-values':
                     return this.applyMissingValues(cleanedData, column, config);
-                case 'outliers':
-                    return this.applyOutliers(cleanedData, column, config);
-                case 'data-type':
-                    return this.applyDataType(cleanedData, column, config);
-                case 'text-cleaning':
-                    return this.applyTextCleaning(cleanedData, column, config);
-                case 'duplicates':
-                    return this.applyDuplicates(cleanedData, column, config);
                 case 'normalize':
                     return this.applyNormalize(cleanedData, column, config);
                 default:
@@ -419,10 +324,11 @@ class DataCleaningManager {
         const action = config.action || 'fill-mean';
         let stats = { missing_filled: 0 };
         
-        // Find missing values
+        // Find missing values (including NaN)
         const missingIndices = [];
         data.forEach((row, index) => {
-            if (row[column] === null || row[column] === undefined || row[column] === '') {
+            const value = row[column];
+            if (this.isEmptyValue(value)) {
                 missingIndices.push(index);
             }
         });
@@ -434,14 +340,14 @@ class DataCleaningManager {
         // Calculate fill value based on action
         let fillValue = null;
         if (action === 'fill-mean' && this.isNumericColumn(column)) {
-            const numericValues = data.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
+            const numericValues = data.map(row => row[column]).filter(val => !this.isEmptyValue(val) && typeof val === 'number');
             fillValue = numericValues.length > 0 ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length : 0;
         } else if (action === 'fill-median' && this.isNumericColumn(column)) {
-            const numericValues = data.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
+            const numericValues = data.map(row => row[column]).filter(val => !this.isEmptyValue(val) && typeof val === 'number');
             numericValues.sort((a, b) => a - b);
             fillValue = numericValues.length > 0 ? numericValues[Math.floor(numericValues.length / 2)] : 0;
         } else if (action === 'fill-mode') {
-            const values = data.map(row => row[column]).filter(val => val !== null && val !== undefined);
+            const values = data.map(row => row[column]).filter(val => !this.isEmptyValue(val));
             const valueCounts = {};
             values.forEach(val => valueCounts[val] = (valueCounts[val] || 0) + 1);
             const maxCount = Math.max(...Object.values(valueCounts));
@@ -465,236 +371,6 @@ class DataCleaningManager {
         });
         
         stats.missing_filled = missingIndices.length;
-        return { success: true, cleaned_data: data, stats };
-    }
-    
-    applyOutliers(data, column, config) {
-        if (!this.isNumericColumn(column)) {
-            return { success: false, error: 'Outlier detection only works with numeric columns' };
-        }
-        
-        const method = config.method || 'iqr';
-        const action = config.action || 'cap';
-        const threshold = config.threshold || 1.5;
-        
-        // Detect outliers
-        const values = data.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
-        let outliers = [];
-        
-        if (method === 'iqr') {
-            const sorted = [...values].sort((a, b) => a - b);
-            const q1 = sorted[Math.floor(sorted.length * 0.25)];
-            const q3 = sorted[Math.floor(sorted.length * 0.75)];
-            const iqr = q3 - q1;
-            const lowerBound = q1 - threshold * iqr;
-            const upperBound = q3 + threshold * iqr;
-            
-            outliers = data.map((row, index) => {
-                const val = row[column];
-                return val < lowerBound || val > upperBound ? index : -1;
-            }).filter(index => index !== -1);
-        } else if (method === 'zscore') {
-            const mean = values.reduce((a, b) => a + b, 0) / values.length;
-            const std = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length);
-            
-            outliers = data.map((row, index) => {
-                const val = row[column];
-                return Math.abs((val - mean) / std) > threshold ? index : -1;
-            }).filter(index => index !== -1);
-        }
-        
-        let stats = { outliers_found: outliers.length };
-        
-        // Apply changes
-        outliers.forEach(index => {
-            const oldValue = data[index][column];
-            
-            if (action === 'cap') {
-                if (method === 'iqr') {
-                    const sorted = [...values].sort((a, b) => a - b);
-                    const q1 = sorted[Math.floor(sorted.length * 0.25)];
-                    const q3 = sorted[Math.floor(sorted.length * 0.75)];
-                    const iqr = q3 - q1;
-                    const lowerBound = q1 - threshold * iqr;
-                    const upperBound = q3 + threshold * iqr;
-                    
-                    if (oldValue < lowerBound) data[index][column] = lowerBound;
-                    else if (oldValue > upperBound) data[index][column] = upperBound;
-                }
-            } else if (action === 'remove') {
-                data[index][column] = null; // Mark for removal
-            } else if (action === 'mark') {
-                data[index][`${column}_is_outlier`] = true;
-            }
-        });
-        
-        if (action === 'cap') stats.outliers_capped = outliers.length;
-        else if (action === 'remove') stats.outliers_removed = outliers.length;
-        else if (action === 'mark') stats.outliers_marked = outliers.length;
-        
-        return { success: true, cleaned_data: data, stats };
-    }
-    
-    applyDataType(data, column, config) {
-        const targetType = config.target_type || 'string';
-        const method = config.method || 'coerce';
-        
-        let stats = { original_type: 'unknown', new_type: 'unknown' };
-        
-        try {
-            if (targetType === 'int') {
-                data.forEach(row => {
-                    if (row[column] !== null && row[column] !== undefined) {
-                        const converted = parseInt(row[column]);
-                        if (!isNaN(converted) || method === 'coerce') {
-                            row[column] = isNaN(converted) ? 0 : converted;
-                        }
-                    }
-                });
-            } else if (targetType === 'float') {
-                data.forEach(row => {
-                    if (row[column] !== null && row[column] !== undefined) {
-                        const converted = parseFloat(row[column]);
-                        if (!isNaN(converted) || method === 'coerce') {
-                            row[column] = isNaN(converted) ? 0.0 : converted;
-                        }
-                    }
-                });
-            } else if (targetType === 'string') {
-                data.forEach(row => {
-                    if (row[column] !== null && row[column] !== undefined) {
-                        row[column] = String(row[column]);
-                    }
-                });
-            } else if (targetType === 'datetime') {
-                data.forEach(row => {
-                    if (row[column] !== null && row[column] !== undefined) {
-                        const date = new Date(row[column]);
-                        if (!isNaN(date.getTime()) || method === 'coerce') {
-                            row[column] = isNaN(date.getTime()) ? null : date.toISOString();
-                        }
-                    }
-                });
-            } else if (targetType === 'boolean') {
-                data.forEach(row => {
-                    if (row[column] !== null && row[column] !== undefined) {
-                        row[column] = ['true', '1', 1, true].includes(row[column]);
-                    }
-                });
-            }
-            
-            stats.conversion_successful = true;
-            return { success: true, cleaned_data: data, stats };
-            
-        } catch (error) {
-            stats.conversion_successful = false;
-            stats.error = error.message;
-            return { success: false, error: error.message };
-        }
-    }
-    
-    applyTextCleaning(data, column, config) {
-        const stats = { rows_processed: data.length };
-        
-        data.forEach(row => {
-            if (row[column] === null || row[column] === undefined) return;
-            
-            let text = String(row[column]);
-            
-            if (config.trim_whitespace) {
-                text = text.trim();
-            }
-            
-            if (config.lowercase) {
-                text = text.toLowerCase();
-            }
-            
-            if (config.remove_special) {
-                text = text.replace(/[^a-zA-Z0-9\s]/g, '');
-            }
-            
-            if (config.remove_numbers) {
-                text = text.replace(/\d+/g, '');
-            }
-            
-            if (config.remove_duplicates) {
-                const words = text.split(' ');
-                const uniqueWords = [];
-                words.forEach(word => {
-                    if (!uniqueWords.includes(word)) {
-                        uniqueWords.push(word);
-                    }
-                });
-                text = uniqueWords.join(' ');
-            }
-            
-            // Custom replacements
-            if (config.custom_replacements) {
-                config.custom_replacements.split('\n').forEach(line => {
-                    if (line.includes(':')) {
-                        const [old, new_] = line.split(':', 2);
-                        text = text.replace(new RegExp(old.trim(), 'g'), new_.trim());
-                    }
-                });
-            }
-            
-            row[column] = text;
-        });
-        
-        return { success: true, cleaned_data: data, stats };
-    }
-    
-    applyDuplicates(data, column, config) {
-        const scope = config.scope || 'all';
-        const action = config.action || 'remove';
-        const keepOption = config.keep || 'first';
-        
-        const originalCount = data.length;
-        
-        let subset = null;
-        if (scope === 'selected') {
-            subset = [column];
-        } else if (scope === 'subset') {
-            subset = config.subset_columns || [];
-        }
-        
-        let stats = {};
-        
-        if (action === 'remove') {
-            const seen = new Set();
-            const toRemove = [];
-            
-            data.forEach((row, index) => {
-                const key = subset ? JSON.stringify(subset.map(col => row[col])) : JSON.stringify(row);
-                if (seen.has(key)) {
-                    toRemove.push(index);
-                } else {
-                    seen.add(key);
-                }
-            });
-            
-            toRemove.reverse().forEach(index => {
-                data.splice(index, 1);
-            });
-            
-            stats = { duplicates_removed: toRemove.length, rows_remaining: data.length };
-        } else if (action === 'mark') {
-            const seen = new Set();
-            let duplicateCount = 0;
-            
-            data.forEach((row, index) => {
-                const key = subset ? JSON.stringify(subset.map(col => row[col])) : JSON.stringify(row);
-                if (seen.has(key)) {
-                    row.is_duplicate = true;
-                    duplicateCount++;
-                } else {
-                    seen.add(key);
-                }
-            });
-            
-            stats = { duplicates_marked: duplicateCount };
-        }
-        
         return { success: true, cleaned_data: data, stats };
     }
     
@@ -733,10 +409,6 @@ class DataCleaningManager {
                 const q3 = sorted[Math.floor(sorted.length * 0.75)];
                 const iqr = q3 - q1;
                 newValue = (row[column] - q1) / iqr;
-            } else if (method === 'decimal') {
-                const maxAbs = Math.max(...values.map(v => Math.abs(v)));
-                const scale = Math.pow(10, Math.floor(Math.log10(maxAbs)));
-                newValue = row[column] / scale;
             }
             
             row[column] = newValue;
@@ -755,34 +427,10 @@ class DataCleaningManager {
     getOperationConfig() {
         const config = {};
         
-        console.log('Getting config for operation:', this.currentOperation); // Debug
-        
         switch (this.currentOperation) {
             case 'missing-values':
                 config.action = document.getElementById('missingAction')?.value || 'fill-mean';
                 config.custom_value = document.getElementById('customValue')?.value || '';
-                break;
-            case 'outliers':
-                config.method = document.getElementById('outlierMethod')?.value || 'iqr';
-                config.action = document.getElementById('outlierAction')?.value || 'cap';
-                config.threshold = parseFloat(document.getElementById('outlierThreshold')?.value || 1.5);
-                break;
-            case 'data-type':
-                config.target_type = document.getElementById('targetType')?.value || 'string';
-                config.method = document.getElementById('conversionMethod')?.value || 'coerce';
-                break;
-            case 'text-cleaning':
-                config.lowercase = document.getElementById('lowercase')?.checked || false;
-                config.remove_special = document.getElementById('removeSpecial')?.checked || false;
-                config.remove_numbers = document.getElementById('removeNumbers')?.checked || false;
-                config.trim_whitespace = document.getElementById('trimWhitespace')?.checked || true;
-                config.remove_duplicates = document.getElementById('removeDuplicates')?.checked || false;
-                config.custom_replacements = document.getElementById('customReplacements')?.value || '';
-                break;
-            case 'duplicates':
-                config.scope = document.getElementById('duplicateScope')?.value || 'all';
-                config.action = document.getElementById('duplicateAction')?.value || 'remove';
-                config.keep = document.getElementById('keepOption')?.value || 'first';
                 break;
             case 'normalize':
                 config.method = document.getElementById('normalizeMethod')?.value || 'minmax';
@@ -791,7 +439,6 @@ class DataCleaningManager {
                 break;
         }
         
-        console.log('Generated config:', config); // Debug
         return config;
     }
     
@@ -812,10 +459,6 @@ class DataCleaningManager {
     getOperationDescription(operation, config) {
         const operationNames = {
             'missing-values': 'Handle Missing Values',
-            'outliers': 'Detect & Handle Outliers',
-            'data-type': 'Convert Data Type',
-            'text-cleaning': 'Text Cleaning',
-            'duplicates': 'Remove Duplicates',
             'normalize': 'Normalize Data'
         };
         
@@ -823,6 +466,8 @@ class DataCleaningManager {
         
         if (config.action) {
             description += ` - ${config.action}`;
+        } else if (config.method) {
+            description += ` - ${config.method}`;
         }
         
         return description;
@@ -902,21 +547,16 @@ class DataCleaningManager {
             return;
         }
         
-        // Set current operation for preview
-        this.currentOperation = operation;
+        if (!this.isNumericColumn(column)) {
+            this.showError('This operation only works with numeric columns');
+            return;
+        }
         
         this.showLoading();
         
         try {
-            // Ensure operation config elements are created
-            this.showOperationConfig(operation);
-            
             const config = this.getOperationConfig();
-            console.log('Preview config:', config); // Debug
-            
             const previewData = this.generatePreviewData(column, operation, config);
-            console.log('Preview data:', previewData); // Debug
-            
             this.showPreviewComparison(previewData, column);
         } catch (error) {
             console.error('Error generating preview:', error);
@@ -933,14 +573,6 @@ class DataCleaningManager {
         switch (operation) {
             case 'missing-values':
                 return this.previewMissingValues(previewData, column, config);
-            case 'outliers':
-                return this.previewOutliers(previewData, column, config);
-            case 'data-type':
-                return this.previewDataType(previewData, column, config);
-            case 'text-cleaning':
-                return this.previewTextCleaning(previewData, column, config);
-            case 'duplicates':
-                return this.previewDuplicates(previewData, column, config);
             case 'normalize':
                 return this.previewNormalize(previewData, column, config);
             default:
@@ -955,29 +587,31 @@ class DataCleaningManager {
         
         const action = config.action || 'fill-mean';
         
-        // Find missing values
+        // Find missing values (including NaN)
         const missingIndices = [];
-        before.forEach((row, index) => {
-            if (row[column] === null || row[column] === undefined || row[column] === '') {
+        data.forEach((row, index) => {
+            const value = row[column];
+            if (this.isEmptyValue(value)) {
                 missingIndices.push(index);
             }
         });
         
         if (missingIndices.length === 0) {
-            return { before, after, changes: [{ type: 'info', message: 'No missing values found in this column' }] };
+            changes.push({ type: 'info', message: 'No missing values found in sample data' });
+            return { before, after, changes };
         }
         
         // Calculate fill value based on action
         let fillValue = null;
         if (action === 'fill-mean' && this.isNumericColumn(column)) {
-            const numericValues = before.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
+            const numericValues = data.map(row => row[column]).filter(val => !this.isEmptyValue(val) && typeof val === 'number');
             fillValue = numericValues.length > 0 ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length : 0;
         } else if (action === 'fill-median' && this.isNumericColumn(column)) {
-            const numericValues = before.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
+            const numericValues = data.map(row => row[column]).filter(val => !this.isEmptyValue(val) && typeof val === 'number');
             numericValues.sort((a, b) => a - b);
             fillValue = numericValues.length > 0 ? numericValues[Math.floor(numericValues.length / 2)] : 0;
         } else if (action === 'fill-mode') {
-            const values = before.map(row => row[column]).filter(val => val !== null && val !== undefined);
+            const values = data.map(row => row[column]).filter(val => !this.isEmptyValue(val));
             const valueCounts = {};
             values.forEach(val => valueCounts[val] = (valueCounts[val] || 0) + 1);
             const maxCount = Math.max(...Object.values(valueCounts));
@@ -989,286 +623,18 @@ class DataCleaningManager {
         } else if (action === 'drop') {
             // Remove rows with missing values
             missingIndices.reverse().forEach(index => {
-                after.splice(index, 1);
+                data.splice(index, 1);
             });
-            changes.push({ type: 'removed', count: missingIndices.length, message: `${missingIndices.length} rows will be removed` });
+            changes.push({ type: 'info', message: `Removed ${missingIndices.length} rows with missing values` });
             return { before, after, changes };
         }
         
         // Apply changes
         missingIndices.forEach(index => {
-            after[index][column] = fillValue;
-            changes.push({ 
-                type: 'filled', 
-                index, 
-                oldValue: before[index][column], 
-                newValue: fillValue,
-                message: `Row ${index + 1}: "${before[index][column]}" → "${fillValue}"`
-            });
+            data[index][column] = fillValue;
         });
         
-        return { before, after, changes };
-    }
-    
-    previewOutliers(data, column, config) {
-        const before = [...data];
-        const after = [...data];
-        const changes = [];
-        
-        if (!this.isNumericColumn(column)) {
-            return { before, after, changes: [{ type: 'error', message: 'Outlier detection only works with numeric columns' }] };
-        }
-        
-        const method = config.method || 'iqr';
-        const action = config.action || 'cap';
-        const threshold = config.threshold || 1.5;
-        
-        // Detect outliers
-        const values = before.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
-        let outliers = [];
-        
-        if (method === 'iqr') {
-            const sorted = [...values].sort((a, b) => a - b);
-            const q1 = sorted[Math.floor(sorted.length * 0.25)];
-            const q3 = sorted[Math.floor(sorted.length * 0.75)];
-            const iqr = q3 - q1;
-            const lowerBound = q1 - threshold * iqr;
-            const upperBound = q3 + threshold * iqr;
-            
-            outliers = before.map((row, index) => {
-                const val = row[column];
-                return val < lowerBound || val > upperBound ? index : -1;
-            }).filter(index => index !== -1);
-        } else if (method === 'zscore') {
-            const mean = values.reduce((a, b) => a + b, 0) / values.length;
-            const std = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length);
-            
-            outliers = before.map((row, index) => {
-                const val = row[column];
-                return Math.abs((val - mean) / std) > threshold ? index : -1;
-            }).filter(index => index !== -1);
-        }
-        
-        if (outliers.length === 0) {
-            return { before, after, changes: [{ type: 'info', message: 'No outliers detected in this column' }] };
-        }
-        
-        // Apply changes
-        outliers.forEach(index => {
-            const oldValue = before[index][column];
-            let newValue = oldValue;
-            
-            if (action === 'cap') {
-                if (method === 'iqr') {
-                    const sorted = [...values].sort((a, b) => a - b);
-                    const q1 = sorted[Math.floor(sorted.length * 0.25)];
-                    const q3 = sorted[Math.floor(sorted.length * 0.75)];
-                    const iqr = q3 - q1;
-                    const lowerBound = q1 - threshold * iqr;
-                    const upperBound = q3 + threshold * iqr;
-                    
-                    if (oldValue < lowerBound) newValue = lowerBound;
-                    else if (oldValue > upperBound) newValue = upperBound;
-                }
-            } else if (action === 'remove') {
-                after[index][column] = null; // Mark for removal
-            } else if (action === 'mark') {
-                after[index][`${column}_is_outlier`] = true;
-            }
-            
-            changes.push({
-                type: 'outlier',
-                index,
-                oldValue,
-                newValue,
-                message: `Row ${index + 1}: Outlier "${oldValue}" ${action === 'cap' ? `→ "${newValue}"` : action === 'remove' ? 'will be removed' : 'will be marked'}`
-            });
-        });
-        
-        return { before, after, changes };
-    }
-    
-    previewDataType(data, column, config) {
-        const before = [...data];
-        const after = [...data];
-        const changes = [];
-        
-        const targetType = config.target_type || 'string';
-        const method = config.method || 'coerce';
-        
-        // Preview conversion for first few values
-        const sampleIndices = [0, 1, 2, 3, 4].filter(i => i < data.length);
-        
-        sampleIndices.forEach(index => {
-            const oldValue = before[index][column];
-            let newValue = oldValue;
-            
-            try {
-                if (targetType === 'int') {
-                    newValue = parseInt(oldValue);
-                    if (isNaN(newValue)) newValue = method === 'coerce' ? 0 : oldValue;
-                } else if (targetType === 'float') {
-                    newValue = parseFloat(oldValue);
-                    if (isNaN(newValue)) newValue = method === 'coerce' ? 0.0 : oldValue;
-                } else if (targetType === 'string') {
-                    newValue = String(oldValue);
-                } else if (targetType === 'datetime') {
-                    newValue = new Date(oldValue).toISOString();
-                } else if (targetType === 'boolean') {
-                    newValue = ['true', '1', 1, true].includes(oldValue);
-                }
-                
-                if (newValue !== oldValue) {
-                    changes.push({
-                        type: 'conversion',
-                        index,
-                        oldValue,
-                        newValue,
-                        message: `Row ${index + 1}: "${oldValue}" → "${newValue}"`
-                    });
-                    after[index][column] = newValue;
-                }
-            } catch (error) {
-                changes.push({
-                    type: 'error',
-                    index,
-                    oldValue,
-                    message: `Row ${index + 1}: Conversion failed for "${oldValue}"`
-                });
-            }
-        });
-        
-        if (changes.length === 0) {
-            changes.push({ type: 'info', message: 'No data type conversions needed for sample data' });
-        }
-        
-        return { before, after, changes };
-    }
-    
-    previewTextCleaning(data, column, config) {
-        const before = [...data];
-        const after = [...data];
-        const changes = [];
-        
-        // Preview first few values
-        const sampleIndices = [0, 1, 2, 3, 4].filter(i => i < data.length);
-        
-        sampleIndices.forEach(index => {
-            const oldValue = before[index][column];
-            if (oldValue === null || oldValue === undefined) return;
-            
-            let newValue = String(oldValue);
-            
-            if (config.trim_whitespace) {
-                newValue = newValue.trim();
-            }
-            
-            if (config.lowercase) {
-                newValue = newValue.toLowerCase();
-            }
-            
-            if (config.remove_special) {
-                newValue = newValue.replace(/[^a-zA-Z0-9\s]/g, '');
-            }
-            
-            if (config.remove_numbers) {
-                newValue = newValue.replace(/\d+/g, '');
-            }
-            
-            if (config.remove_duplicates) {
-                const words = newValue.split(' ');
-                const uniqueWords = [];
-                words.forEach(word => {
-                    if (!uniqueWords.includes(word)) {
-                        uniqueWords.push(word);
-                    }
-                });
-                newValue = uniqueWords.join(' ');
-            }
-            
-            // Custom replacements
-            if (config.custom_replacements) {
-                config.custom_replacements.split('\n').forEach(line => {
-                    if (line.includes(':')) {
-                        const [old, new_] = line.split(':', 2);
-                        newValue = newValue.replace(new RegExp(old.trim(), 'g'), new_.trim());
-                    }
-                });
-            }
-            
-            if (newValue !== oldValue) {
-                changes.push({
-                    type: 'cleaned',
-                    index,
-                    oldValue,
-                    newValue,
-                    message: `Row ${index + 1}: "${oldValue}" → "${newValue}"`
-                });
-                after[index][column] = newValue;
-            }
-        });
-        
-        if (changes.length === 0) {
-            changes.push({ type: 'info', message: 'No text cleaning needed for sample data' });
-        }
-        
-        return { before, after, changes };
-    }
-    
-    previewDuplicates(data, column, config) {
-        const before = [...data];
-        const after = [...data];
-        const changes = [];
-        
-        const scope = config.scope || 'all';
-        const action = config.action || 'remove';
-        const keepOption = config.keep || 'first';
-        
-        let subset = null;
-        if (scope === 'selected') {
-            subset = [column];
-        } else if (scope === 'subset') {
-            subset = config.subset_columns || [];
-        }
-        
-        // Find duplicates
-        const seen = new Set();
-        const duplicates = [];
-        
-        before.forEach((row, index) => {
-            const key = subset ? JSON.stringify(subset.map(col => row[col])) : JSON.stringify(row);
-            if (seen.has(key)) {
-                duplicates.push(index);
-            } else {
-                seen.add(key);
-            }
-        });
-        
-        if (duplicates.length === 0) {
-            return { before, after, changes: [{ type: 'info', message: 'No duplicate rows found' }] };
-        }
-        
-        if (action === 'remove') {
-            // Mark duplicates for removal
-            duplicates.forEach(index => {
-                after[index] = null; // Mark for removal
-                changes.push({
-                    type: 'duplicate',
-                    index,
-                    message: `Row ${index + 1}: Duplicate will be removed`
-                });
-            });
-        } else if (action === 'mark') {
-            duplicates.forEach(index => {
-                after[index].is_duplicate = true;
-                changes.push({
-                    type: 'marked',
-                    index,
-                    message: `Row ${index + 1}: Marked as duplicate`
-                });
-            });
-        }
-        
+        changes.push({ type: 'info', message: `Filled ${missingIndices.length} missing values with ${fillValue}` });
         return { before, after, changes };
     }
     
@@ -1285,7 +651,7 @@ class DataCleaningManager {
         const rangeMin = config.range_min || 0;
         const rangeMax = config.range_max || 1;
         
-        const values = before.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
+        const values = data.map(row => row[column]).filter(val => val !== null && val !== undefined && !isNaN(val));
         
         if (values.length === 0) {
             return { before, after, changes: [{ type: 'error', message: 'No numeric values found for normalization' }] };
@@ -1296,40 +662,39 @@ class DataCleaningManager {
         const mean = values.reduce((a, b) => a + b, 0) / values.length;
         const std = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length);
         
-        // Preview first few values
-        const sampleIndices = [0, 1, 2, 3, 4].filter(i => i < data.length);
-        
-        sampleIndices.forEach(index => {
-            const oldValue = before[index][column];
-            if (oldValue === null || oldValue === undefined || isNaN(oldValue)) return;
+        data.forEach((row, index) => {
+            if (row[column] === null || row[column] === undefined || isNaN(row[column])) return;
             
+            const oldValue = row[column];
             let newValue = oldValue;
             
             if (method === 'minmax') {
-                newValue = ((oldValue - min) / (max - min)) * (rangeMax - rangeMin) + rangeMin;
+                newValue = ((row[column] - min) / (max - min)) * (rangeMax - rangeMin) + rangeMin;
             } else if (method === 'zscore') {
-                newValue = (oldValue - mean) / std;
+                newValue = (row[column] - mean) / std;
             } else if (method === 'robust') {
                 const sorted = [...values].sort((a, b) => a - b);
                 const q1 = sorted[Math.floor(sorted.length * 0.25)];
                 const q3 = sorted[Math.floor(sorted.length * 0.75)];
                 const iqr = q3 - q1;
-                newValue = (oldValue - q1) / iqr;
-            } else if (method === 'decimal') {
-                const maxAbs = Math.max(...values.map(v => Math.abs(v)));
-                const scale = Math.pow(10, Math.floor(Math.log10(maxAbs)));
-                newValue = oldValue / scale;
+                newValue = (row[column] - q1) / iqr;
             }
             
-            changes.push({
-                type: 'normalized',
-                index,
-                oldValue,
-                newValue,
-                message: `Row ${index + 1}: ${oldValue.toFixed(2)} → ${newValue.toFixed(2)}`
-            });
-            after[index][column] = newValue;
+            if (newValue !== oldValue) {
+                changes.push({
+                    type: 'normalized',
+                    index,
+                    oldValue,
+                    newValue,
+                    message: `Row ${index + 1}: ${oldValue.toFixed(2)} → ${newValue.toFixed(2)}`
+                });
+                after[index][column] = newValue;
+            }
         });
+        
+        if (changes.length === 0) {
+            changes.push({ type: 'info', message: 'No normalization needed for sample data' });
+        }
         
         return { before, after, changes };
     }
@@ -1339,8 +704,6 @@ class DataCleaningManager {
         if (!preview) return;
         
         const { before, after, changes } = previewData;
-        
-        console.log('Showing preview comparison:', { before, after, changes }); // Debug
         
         let comparisonHTML = `
             <h3>Preview: ${this.getOperationDescription(this.currentOperation, this.getOperationConfig())}</h3>
@@ -1427,6 +790,8 @@ class DataCleaningManager {
     }
     
     resetCleaning() {
+        // Restore original data
+        this.data = JSON.parse(JSON.stringify(this.originalData));
         this.cleaningHistory = [];
         this.updateHistoryDisplay();
         this.clearPreview();
@@ -1435,7 +800,10 @@ class DataCleaningManager {
         document.getElementById('cleaningColumn').value = '';
         document.getElementById('cleaningOperation').value = '';
         
-        this.showSuccess('Cleaning history reset');
+        // Update other components with original data
+        this.updateData(this.data);
+        
+        this.showSuccess('Data restored to original state');
     }
     
     isNumericColumn(column) {
@@ -1443,10 +811,39 @@ class DataCleaningManager {
         
         const sampleValues = this.data.slice(0, 100).map(row => row[column]);
         const numericCount = sampleValues.filter(val => 
-            val !== null && val !== undefined && !isNaN(val)
+            val !== null && val !== undefined && val !== '' && !this.isNaNValue(val) && typeof val === 'number'
         ).length;
         
         return numericCount > sampleValues.length * 0.5;
+    }
+    
+    // Helper function to detect NaN values in all forms
+    isNaNValue(value) {
+        if (value === null || value === undefined || value === '') {
+            return false; // These are handled separately
+        }
+        
+        // Check for string "NaN"
+        if (typeof value === 'string' && value.toLowerCase() === 'nan') {
+            return true;
+        }
+        
+        // Check for actual NaN
+        if (typeof value === 'number' && isNaN(value)) {
+            return true;
+        }
+        
+        // Check for other NaN-like values
+        if (typeof value === 'string' && (value.toLowerCase() === 'nan' || value.toLowerCase() === 'n/a' || value.toLowerCase() === 'na')) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Helper function to check if a value is empty/missing
+    isEmptyValue(value) {
+        return value === null || value === undefined || value === '' || this.isNaNValue(value);
     }
     
     showLoading() {
@@ -1455,7 +852,7 @@ class DataCleaningManager {
             preview.innerHTML = `
                 <div class="cleaning-loading">
                     <div class="loading-spinner"></div>
-                    <span>Applying cleaning operation...</span>
+                    <span>Processing...</span>
                 </div>
             `;
         }
@@ -1488,73 +885,16 @@ class DataCleaningManager {
         }
     }
     
-    // Test method to verify operations are working
-    testOperation(operation, column) {
-        console.log('Testing operation:', operation, 'on column:', column);
+    toggleCustomValueInput() {
+        const missingAction = document.getElementById('missingAction');
+        const customValueGroup = document.getElementById('customValueGroup');
         
-        if (!this.data || this.data.length === 0) {
-            console.error('No data available for testing');
-            return;
-        }
-        
-        const testConfig = this.getDefaultConfig(operation);
-        console.log('Test config:', testConfig);
-        
-        const testData = JSON.parse(JSON.stringify(this.data.slice(0, 5)));
-        console.log('Test data before:', testData);
-        
-        let result;
-        switch (operation) {
-            case 'missing-values':
-                result = this.previewMissingValues(testData, column, testConfig);
-                break;
-            case 'outliers':
-                result = this.previewOutliers(testData, column, testConfig);
-                break;
-            case 'data-type':
-                result = this.previewDataType(testData, column, testConfig);
-                break;
-            case 'text-cleaning':
-                result = this.previewTextCleaning(testData, column, testConfig);
-                break;
-            case 'duplicates':
-                result = this.previewDuplicates(testData, column, testConfig);
-                break;
-            case 'normalize':
-                result = this.previewNormalize(testData, column, testConfig);
-                break;
-            default:
-                console.error('Unknown operation:', operation);
-                return;
-        }
-        
-        console.log('Test result:', result);
-        return result;
-    }
-    
-    getDefaultConfig(operation) {
-        switch (operation) {
-            case 'missing-values':
-                return { action: 'fill-mean' };
-            case 'outliers':
-                return { method: 'iqr', action: 'cap', threshold: 1.5 };
-            case 'data-type':
-                return { target_type: 'string', method: 'coerce' };
-            case 'text-cleaning':
-                return { 
-                    lowercase: true, 
-                    remove_special: false, 
-                    remove_numbers: false, 
-                    trim_whitespace: true, 
-                    remove_duplicates: false, 
-                    custom_replacements: '' 
-                };
-            case 'duplicates':
-                return { scope: 'all', action: 'remove', keep: 'first' };
-            case 'normalize':
-                return { method: 'minmax', range_min: 0, range_max: 1 };
-            default:
-                return {};
+        if (missingAction && customValueGroup) {
+            if (missingAction.value === 'fill-custom') {
+                customValueGroup.style.display = 'block';
+            } else {
+                customValueGroup.style.display = 'none';
+            }
         }
     }
 }
@@ -1582,28 +922,499 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Global test function for debugging
-window.testDataCleaning = function(operation, column) {
-    if (window.dataCleaningManager) {
-        return window.dataCleaningManager.testOperation(operation, column);
-    } else {
-        console.error('DataCleaningManager not initialized');
-        return null;
+// Data Cleaning Operations
+const cleaningOperations = {
+    'missing-values': {
+        name: 'Handle Missing Values',
+        configId: 'missingValuesConfig'
+    },
+    'outliers': {
+        name: 'Detect & Handle Outliers',
+        configId: 'outliersConfig'
+    },
+    'data-type': {
+        name: 'Convert Data Type',
+        configId: 'dataTypeConfig'
+    },
+    'text-cleaning': {
+        name: 'Text Cleaning',
+        configId: 'textCleaningConfig'
+    },
+    'duplicates': {
+        name: 'Remove Duplicates',
+        configId: 'duplicatesConfig'
+    },
+    'normalize': {
+        name: 'Normalize Data',
+        configId: null
     }
 };
 
-// Global function to check data cleaning status
-window.checkDataCleaningStatus = function() {
-    if (window.dataCleaningManager) {
-        console.log('DataCleaningManager Status:', {
-            dataLength: window.dataCleaningManager.data.length,
-            columns: window.dataCleaningManager.columns,
-            currentOperation: window.dataCleaningManager.currentOperation,
-            historyLength: window.dataCleaningManager.cleaningHistory.length
-        });
-        return window.dataCleaningManager;
+// Operation selection handler
+document.getElementById('cleaningOperation').addEventListener('change', function() {
+    const selectedOperation = this.value;
+    
+    // Hide all config sections
+    document.querySelectorAll('.operation-config').forEach(config => {
+        config.style.display = 'none';
+    });
+    
+    // Show config for selected operation
+    if (selectedOperation && cleaningOperations[selectedOperation] && cleaningOperations[selectedOperation].configId) {
+        const configElement = document.getElementById(cleaningOperations[selectedOperation].configId);
+        if (configElement) {
+            configElement.style.display = 'block';
+        }
+    }
+    
+    // Enable/disable apply button
+    const applyButton = document.getElementById('applyCleaningOperation');
+    if (applyButton) {
+        applyButton.disabled = !selectedOperation;
+    }
+});
+
+// Missing values fill method change handler
+document.getElementById('fillMethod').addEventListener('change', function() {
+    const customValueGroup = document.getElementById('customValueGroup');
+    if (this.value === 'custom') {
+        customValueGroup.style.display = 'block';
     } else {
-        console.error('DataCleaningManager not initialized');
+        customValueGroup.style.display = 'none';
+    }
+});
+
+// Enhanced data cleaning function
+function cleanData(operation, config) {
+    if (!window.currentData || !window.currentData.length) {
+        showNotification('No data available for cleaning', 'error');
         return null;
     }
-}; 
+
+    const cleanedData = JSON.parse(JSON.stringify(window.currentData));
+    
+    switch (operation) {
+        case 'missing-values':
+            return handleMissingValues(cleanedData, config);
+        case 'outliers':
+            return handleOutliers(cleanedData, config);
+        case 'data-type':
+            return convertDataType(cleanedData, config);
+        case 'text-cleaning':
+            return cleanText(cleanedData, config);
+        case 'duplicates':
+            return handleDuplicates(cleanedData, config);
+        case 'normalize':
+            return normalizeData(cleanedData);
+        default:
+            showNotification('Unknown operation', 'error');
+            return null;
+    }
+}
+
+// Handle missing values
+function handleMissingValues(data, config) {
+    const { fillMethod, customValue } = config;
+    
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (isNaNValue(row[key])) {
+                switch (fillMethod) {
+                    case 'mean':
+                        row[key] = calculateMean(data, key);
+                        break;
+                    case 'median':
+                        row[key] = calculateMedian(data, key);
+                        break;
+                    case 'mode':
+                        row[key] = calculateMode(data, key);
+                        break;
+                    case 'zero':
+                        row[key] = 0;
+                        break;
+                    case 'custom':
+                        row[key] = customValue;
+                        break;
+                    case 'drop':
+                        // This will be handled by filtering
+                        break;
+                }
+            }
+        });
+    });
+    
+    // Remove rows with missing values if drop method is selected
+    if (fillMethod === 'drop') {
+        return data.filter(row => {
+            return !Object.values(row).some(value => isNaNValue(value));
+        });
+    }
+    
+    return data;
+}
+
+// Handle outliers
+function handleOutliers(data, config) {
+    const { outlierMethod, outlierAction, outlierThreshold } = config;
+    
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (isNumeric(row[key])) {
+                const isOutlier = detectOutlier(row[key], data, key, outlierMethod, outlierThreshold);
+                
+                if (isOutlier) {
+                    switch (outlierAction) {
+                        case 'remove':
+                            row[key] = null; // Will be filtered out
+                            break;
+                        case 'cap':
+                            row[key] = capOutlier(row[key], data, key, outlierMethod, outlierThreshold);
+                            break;
+                        case 'mark':
+                            row[`${key}_outlier`] = true;
+                            break;
+                    }
+                }
+            }
+        });
+    });
+    
+    // Remove rows with null values if remove action is selected
+    if (outlierAction === 'remove') {
+        return data.filter(row => {
+            return !Object.values(row).some(value => value === null);
+        });
+    }
+    
+    return data;
+}
+
+// Convert data type
+function convertDataType(data, config) {
+    const { targetDataType, dateFormat } = config;
+    
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (row[key] !== null && row[key] !== undefined) {
+                try {
+                    switch (targetDataType) {
+                        case 'number':
+                            row[key] = parseFloat(row[key]) || 0;
+                            break;
+                        case 'text':
+                            row[key] = String(row[key]);
+                            break;
+                        case 'date':
+                            row[key] = parseDate(row[key], dateFormat);
+                            break;
+                        case 'boolean':
+                            row[key] = Boolean(row[key]);
+                            break;
+                    }
+                } catch (error) {
+                    console.warn(`Failed to convert ${key} to ${targetDataType}:`, error);
+                }
+            }
+        });
+    });
+    
+    return data;
+}
+
+// Clean text
+function cleanText(data, config) {
+    const {
+        removeSpecialChars,
+        convertToLowercase,
+        removeExtraSpaces,
+        trimWhitespace,
+        removeNumbers,
+        customReplacements
+    } = config;
+    
+    // Parse custom replacements
+    const replacements = {};
+    if (customReplacements) {
+        customReplacements.split(',').forEach(replacement => {
+            const [old, new_] = replacement.split('=');
+            if (old && new_) {
+                replacements[old.trim()] = new_.trim();
+            }
+        });
+    }
+    
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (typeof row[key] === 'string') {
+                let cleaned = row[key];
+                
+                // Apply custom replacements
+                Object.keys(replacements).forEach(old => {
+                    cleaned = cleaned.replace(new RegExp(old, 'g'), replacements[old]);
+                });
+                
+                if (removeSpecialChars) {
+                    cleaned = cleaned.replace(/[^a-zA-Z0-9\s]/g, '');
+                }
+                
+                if (convertToLowercase) {
+                    cleaned = cleaned.toLowerCase();
+                }
+                
+                if (removeExtraSpaces) {
+                    cleaned = cleaned.replace(/\s+/g, ' ');
+                }
+                
+                if (trimWhitespace) {
+                    cleaned = cleaned.trim();
+                }
+                
+                if (removeNumbers) {
+                    cleaned = cleaned.replace(/\d/g, '');
+                }
+                
+                row[key] = cleaned;
+            }
+        });
+    });
+    
+    return data;
+}
+
+// Handle duplicates
+function handleDuplicates(data, config) {
+    const { duplicateAction, duplicateColumns } = config;
+    
+    const columnsToCheck = duplicateColumns ? 
+        duplicateColumns.split(',').map(col => col.trim()) : 
+        Object.keys(data[0] || {});
+    
+    const seen = new Set();
+    const duplicates = [];
+    
+    data.forEach((row, index) => {
+        const key = columnsToCheck.map(col => row[col]).join('|');
+        
+        if (seen.has(key)) {
+            duplicates.push(index);
+        } else {
+            seen.add(key);
+        }
+    });
+    
+    switch (duplicateAction) {
+        case 'remove':
+            return data.filter((_, index) => !duplicates.includes(index));
+        case 'keep_first':
+            return data.filter((_, index) => !duplicates.includes(index));
+        case 'keep_last':
+            const toRemove = new Set();
+            duplicates.forEach(index => {
+                // Find the first occurrence and mark it for removal
+                const key = columnsToCheck.map(col => data[index][col]).join('|');
+                for (let i = 0; i < index; i++) {
+                    const currentKey = columnsToCheck.map(col => data[i][col]).join('|');
+                    if (currentKey === key) {
+                        toRemove.add(i);
+                        break;
+                    }
+                }
+            });
+            return data.filter((_, index) => !toRemove.has(index));
+        case 'mark':
+            data.forEach((row, index) => {
+                row['_duplicate'] = duplicates.includes(index);
+            });
+            return data;
+    }
+    
+    return data;
+}
+
+// Helper functions
+function detectOutlier(value, data, column, method, threshold) {
+    const values = data.map(row => row[column]).filter(v => isNumeric(v));
+    
+    switch (method) {
+        case 'iqr':
+            return detectOutlierIQR(value, values, threshold);
+        case 'zscore':
+            return detectOutlierZScore(value, values, threshold);
+        case 'percentile':
+            return detectOutlierPercentile(value, values, threshold);
+        default:
+            return false;
+    }
+}
+
+function detectOutlierIQR(value, values, threshold) {
+    const sorted = values.sort((a, b) => a - b);
+    const q1 = sorted[Math.floor(sorted.length * 0.25)];
+    const q3 = sorted[Math.floor(sorted.length * 0.75)];
+    const iqr = q3 - q1;
+    const lowerBound = q1 - threshold * iqr;
+    const upperBound = q3 + threshold * iqr;
+    
+    return value < lowerBound || value > upperBound;
+}
+
+function detectOutlierZScore(value, values, threshold) {
+    const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+    const zScore = Math.abs((value - mean) / stdDev);
+    
+    return zScore > threshold;
+}
+
+function detectOutlierPercentile(value, values, threshold) {
+    const sorted = values.sort((a, b) => a - b);
+    const lowerPercentile = sorted[Math.floor(sorted.length * (1 - threshold / 100))];
+    const upperPercentile = sorted[Math.floor(sorted.length * (threshold / 100))];
+    
+    return value < lowerPercentile || value > upperPercentile;
+}
+
+function capOutlier(value, data, column, method, threshold) {
+    const values = data.map(row => row[column]).filter(v => isNumeric(v));
+    
+    switch (method) {
+        case 'iqr':
+            const sorted = values.sort((a, b) => a - b);
+            const q1 = sorted[Math.floor(sorted.length * 0.25)];
+            const q3 = sorted[Math.floor(sorted.length * 0.75)];
+            const iqr = q3 - q1;
+            const lowerBound = q1 - threshold * iqr;
+            const upperBound = q3 + threshold * iqr;
+            
+            if (value < lowerBound) return lowerBound;
+            if (value > upperBound) return upperBound;
+            break;
+        case 'percentile':
+            const sortedValues = values.sort((a, b) => a - b);
+            const lowerPercentile = sortedValues[Math.floor(sortedValues.length * (1 - threshold / 100))];
+            const upperPercentile = sortedValues[Math.floor(sortedValues.length * (threshold / 100))];
+            
+            if (value < lowerPercentile) return lowerPercentile;
+            if (value > upperPercentile) return upperPercentile;
+            break;
+    }
+    
+    return value;
+}
+
+function parseDate(value, format) {
+    // Simple date parsing - can be enhanced
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? value : date.toISOString().split('T')[0];
+}
+
+function isNumeric(value) {
+    return !isNaN(parseFloat(value)) && isFinite(value);
+}
+
+function calculateMean(data, column) {
+    const values = data.map(row => row[column]).filter(val => !isNaN(val) && typeof val === 'number');
+    return values.reduce((sum, val) => sum + val, 0) / values.length;
+}
+
+function calculateMedian(data, column) {
+    const values = data.map(row => row[column]).filter(val => !isNaN(val) && typeof val === 'number').sort((a, b) => a - b);
+    const mid = Math.floor(values.length / 2);
+    return values.length % 2 !== 0 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+}
+
+function calculateMode(data, column) {
+    const values = data.map(row => row[column]).filter(val => !isNaN(val));
+    const valueCounts = {};
+    values.forEach(val => valueCounts[val] = (valueCounts[val] || 0) + 1);
+    const maxCount = Math.max(...Object.values(valueCounts));
+    return Object.keys(valueCounts).find(key => valueCounts[key] === maxCount);
+}
+
+function normalizeData(data) {
+    // Implementation of normalization logic
+    return data; // Placeholder, actual implementation needed
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `cleaning-${type}`;
+    notification.textContent = message;
+    
+    const container = document.querySelector('.data-cleaning-container');
+    if (container) {
+        container.insertBefore(notification, container.firstChild);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+}
+
+// Apply cleaning operation
+document.getElementById('applyCleaningOperation').addEventListener('click', function() {
+    const operation = document.getElementById('cleaningOperation').value;
+    
+    if (!operation) {
+        showNotification('Please select an operation', 'error');
+        return;
+    }
+    
+    if (!window.currentData || !window.currentData.length) {
+        showNotification('No data available for cleaning', 'error');
+        return;
+    }
+    
+    // Get configuration based on operation
+    let config = {};
+    
+    switch (operation) {
+        case 'missing-values':
+            config = {
+                fillMethod: document.getElementById('fillMethod').value,
+                customValue: document.getElementById('customValue').value
+            };
+            break;
+        case 'outliers':
+            config = {
+                outlierMethod: document.getElementById('outlierMethod').value,
+                outlierAction: document.getElementById('outlierAction').value,
+                outlierThreshold: parseFloat(document.getElementById('outlierThreshold').value)
+            };
+            break;
+        case 'data-type':
+            config = {
+                targetDataType: document.getElementById('targetDataType').value,
+                dateFormat: document.getElementById('dateFormat').value
+            };
+            break;
+        case 'text-cleaning':
+            config = {
+                removeSpecialChars: document.getElementById('removeSpecialChars').checked,
+                convertToLowercase: document.getElementById('convertToLowercase').checked,
+                removeExtraSpaces: document.getElementById('removeExtraSpaces').checked,
+                trimWhitespace: document.getElementById('trimWhitespace').checked,
+                removeNumbers: document.getElementById('removeNumbers').checked,
+                customReplacements: document.getElementById('customReplacements').value
+            };
+            break;
+        case 'duplicates':
+            config = {
+                duplicateAction: document.getElementById('duplicateAction').value,
+                duplicateColumns: document.getElementById('duplicateColumns').value
+            };
+            break;
+        case 'normalize':
+            config = {};
+            break;
+    }
+    
+    // Perform the cleaning operation
+    const cleanedData = cleanData(operation, config);
+    
+    if (cleanedData) {
+        // Show preview
+        showCleaningPreview(cleanedData, operation, config);
+    }
+}); 
