@@ -85,17 +85,20 @@
                     </div>
                     <div class="table-actions">
                         <button id="customizeColumns" class="btn btn-secondary">Customize Columns</button>
+                        <button id="exportTableData" class="btn btn-success">Export Data</button>
                         <button id="resetTable" class="btn btn-primary">Reset</button>
                     </div>
                 </div>
-                <div id="columnCustomizer" class="column-customizer">
-                    <h4>Toggle Columns</h4>
-                    {% for column in column_names %}
-                    <div class="column-item" data-column="{{ column }}">
-                        <div class="column-toggle"></div>
-                        <span>{{ column }}</span>
+                <div class="column-customizer">
+                    <div class="customizer-header">
+                        <h3>Column Customizer</h3>
+                        <p>Drag to reorder • Click checkbox to show/hide</p>
                     </div>
-                    {% endfor %}
+                    <div class="column-tags-container">
+                        <div class="column-tags" id="columnTags">
+                            <!-- Column tags will be populated here -->
+                        </div>
+                    </div>
                 </div>
                 <table class="magical-table">
                     <thead>

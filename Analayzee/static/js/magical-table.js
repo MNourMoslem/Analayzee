@@ -13,7 +13,6 @@ class MagicalTable {
         
         this.initializeEventListeners();
         this.render();
-        this.updateColumnToggles();
     }
     
     initializeEventListeners() {
@@ -34,7 +33,7 @@ class MagicalTable {
         
         // Column customization
         document.getElementById('customizeColumns').addEventListener('click', () => {
-            const customizer = document.getElementById('columnCustomizer');
+            const customizer = document.querySelector('.column-customizer');
             if (customizer.classList.contains('show')) {
                 customizer.classList.remove('show');
                 setTimeout(() => {
@@ -52,15 +51,24 @@ class MagicalTable {
         document.getElementById('resetTable').addEventListener('click', () => {
             this.reset();
         });
+    }
+    
+    showSuccess(message) {
+        const notification = document.createElement('div');
+        notification.className = 'success-notification';
+        notification.textContent = message;
+        document.body.appendChild(notification);
         
-        // Column toggles
-        document.querySelectorAll('.column-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const column = item.getAttribute('data-column');
-                this.toggleColumn(column);
-                this.updateColumnToggles();
-            });
-        });
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
     }
     
     filterData() {
@@ -155,7 +163,6 @@ class MagicalTable {
         }, 300);
         
         this.render();
-        this.updateColumnToggles();
     }
     
     render() {
@@ -336,9 +343,315 @@ function parseDjangoJSON(elementId) {
     return parsed;
 }
 
+// Flag to prevent multiple initializations
+let columnCustomizerInitialized = false;
+
 // Initialize magical table
 function initializeMagicalTable() {
     if (document.getElementById('tableData')) {
         window.magicalTable = new MagicalTable();
+        // Initialize column customizer after table is ready
+        setTimeout(() => {
+            if (!columnCustomizerInitialized) {
+                initializeColumnCustomizer();
+                columnCustomizerInitialized = true;
+            }
+        }, 100);
     }
-} 
+}
+
+// Column Customizer functionality
+function initializeColumnCustomizer() {
+    const columnTags = document.getElementById('columnTags');
+    if (!columnTags) return;
+
+    // Clear existing tags to prevent duplicates
+    columnTags.innerHTML = '';
+
+    // Get column names from the magical table's current state
+    let headers = [];
+    if (window.magicalTable && window.magicalTable.visibleColumns) {
+        headers = [...window.magicalTable.visibleColumns];
+    } else {
+        // Fallback to Django column data
+        const columnData = parseDjangoJSON('tableColumns');
+        if (columnData) {
+            headers = columnData;
+        }
+    }
+    
+    if (headers.length === 0) {
+        console.warn('No column headers found for customizer');
+        return;
+    }
+    
+    // Create column tags in the current order
+    headers.forEach((column, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'column-tag';
+        tag.draggable = true;
+        tag.dataset.column = column;
+        tag.dataset.index = index;
+        
+        tag.innerHTML = `
+            <input type="checkbox" id="col_${index}" checked>
+            <label for="col_${index}">${column}</label>
+        `;
+        
+        columnTags.appendChild(tag);
+    });
+
+    // Remove existing event listeners to prevent duplicates
+    const newColumnTags = columnTags.cloneNode(true);
+    columnTags.parentNode.replaceChild(newColumnTags, columnTags);
+    
+    // Drag and drop functionality
+    let draggedElement = null;
+
+    newColumnTags.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('column-tag')) {
+            draggedElement = e.target;
+            e.target.style.opacity = '0.5';
+        }
+    });
+
+    newColumnTags.addEventListener('dragend', (e) => {
+        if (e.target.classList.contains('column-tag')) {
+            e.target.style.opacity = '1';
+            draggedElement = null;
+        }
+    });
+
+    newColumnTags.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const tag = e.target.closest('.column-tag');
+        if (tag && draggedElement && tag !== draggedElement) {
+            const rect = tag.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            
+            if (e.clientY < midY) {
+                tag.style.borderLeft = '2px solid #007bff';
+                tag.style.borderRight = '';
+            } else {
+                tag.style.borderLeft = '';
+                tag.style.borderRight = '2px solid #007bff';
+            }
+        }
+    });
+
+    newColumnTags.addEventListener('dragleave', (e) => {
+        const tag = e.target.closest('.column-tag');
+        if (tag) {
+            tag.style.borderLeft = '';
+            tag.style.borderRight = '';
+        }
+    });
+
+    newColumnTags.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetTag = e.target.closest('.column-tag');
+        if (targetTag && draggedElement && targetTag !== draggedElement) {
+            const rect = targetTag.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            
+            // Clear borders
+            targetTag.style.borderLeft = '';
+            targetTag.style.borderRight = '';
+            
+            // Reorder tags
+            if (e.clientY < midY) {
+                newColumnTags.insertBefore(draggedElement, targetTag);
+            } else {
+                newColumnTags.insertBefore(draggedElement, targetTag.nextSibling);
+            }
+            
+            // Apply changes immediately
+            applyColumnChanges();
+        }
+    });
+
+    // Checkbox change handler
+    newColumnTags.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
+            // Apply changes immediately
+            applyColumnChanges();
+        }
+    });
+
+    // Export functionality
+    const exportButton = document.getElementById('exportTableData');
+    if (exportButton) {
+        exportButton.addEventListener('click', showExportOptions);
+    }
+}
+
+function applyColumnChanges() {
+    const columnTags = document.getElementById('columnTags');
+    if (!columnTags) return;
+
+    const tags = Array.from(columnTags.querySelectorAll('.column-tag'));
+    const newOrder = [];
+    const hiddenColumns = [];
+
+    tags.forEach((tag, index) => {
+        const columnName = tag.dataset.column;
+        const checkbox = tag.querySelector('input[type="checkbox"]');
+        
+        if (checkbox.checked) {
+            newOrder.push(columnName);
+        } else {
+            hiddenColumns.push(columnName);
+        }
+    });
+
+    // Update the magical table's visible columns and re-render
+    if (window.magicalTable) {
+        window.magicalTable.visibleColumns = newOrder;
+        window.magicalTable.render();
+    }
+}
+
+function showExportOptions() {
+    // Create modal for export options
+    const modal = document.createElement('div');
+    modal.className = 'export-modal';
+    modal.innerHTML = `
+        <div class="export-modal-content">
+            <div class="export-modal-header">
+                <h3>Export Data</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="export-modal-body">
+                <p>Choose export format for visible data:</p>
+                <div class="export-options">
+                    <button class="export-option" data-format="excel">
+                        <span class="export-icon">📊</span>
+                        <span class="export-text">Excel (.xlsx)</span>
+                    </button>
+                    <button class="export-option" data-format="csv">
+                        <span class="export-icon">📄</span>
+                        <span class="export-text">CSV (.csv)</span>
+                    </button>
+                    <button class="export-option" data-format="tsv">
+                        <span class="export-icon">📋</span>
+                        <span class="export-text">TSV (.tsv)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close modal functionality
+    const closeBtn = modal.querySelector('.close-btn');
+    closeBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    // Export option handlers
+    const exportOptions = modal.querySelectorAll('.export-option');
+    exportOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const format = option.dataset.format;
+            exportTableData(format);
+            document.body.removeChild(modal);
+        });
+    });
+}
+
+function exportTableData(format) {
+    if (!window.magicalTable) return;
+
+    // Get visible data based on current state
+    const visibleColumns = window.magicalTable.visibleColumns;
+    const filteredData = window.magicalTable.filteredData;
+    
+    if (!visibleColumns || visibleColumns.length === 0) {
+        alert('No visible columns to export');
+        return;
+    }
+
+    // Prepare data for export
+    const exportData = filteredData.map(row => {
+        const exportRow = {};
+        visibleColumns.forEach(column => {
+            exportRow[column] = row[column] || '';
+        });
+        return exportRow;
+    });
+
+    let content, mimeType, filename;
+
+    switch (format) {
+        case 'excel':
+            // For Excel, we'll create a CSV-like format that Excel can open
+            content = createCSVContent(exportData, visibleColumns);
+            mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            filename = 'table_data.xlsx';
+            break;
+        case 'csv':
+            content = createCSVContent(exportData, visibleColumns);
+            mimeType = 'text/csv';
+            filename = 'table_data.csv';
+            break;
+        case 'tsv':
+            content = createTSVContent(exportData, visibleColumns);
+            mimeType = 'text/tab-separated-values';
+            filename = 'table_data.tsv';
+            break;
+        default:
+            return;
+    }
+
+    // Create and download file
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Show success message
+    if (window.magicalTable.showSuccess) {
+        window.magicalTable.showSuccess(`Data exported as ${format.toUpperCase()} successfully`);
+    }
+}
+
+function createCSVContent(data, columns) {
+    const header = columns.map(col => `"${col}"`).join(',');
+    const rows = data.map(row => 
+        columns.map(col => {
+            const value = row[col];
+            // Escape quotes and wrap in quotes
+            return `"${String(value).replace(/"/g, '""')}"`;
+        }).join(',')
+    );
+    return [header, ...rows].join('\n');
+}
+
+function createTSVContent(data, columns) {
+    const header = columns.join('\t');
+    const rows = data.map(row => 
+        columns.map(col => {
+            const value = row[col];
+            // Replace tabs with spaces to avoid breaking TSV format
+            return String(value).replace(/\t/g, ' ');
+        }).join('\t')
+    );
+    return [header, ...rows].join('\n');
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMagicalTable();
+}); 
