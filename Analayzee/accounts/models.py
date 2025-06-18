@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from datetime import timedelta
 import uuid
+from django.core.exceptions import ValidationError
 
 
 class SubscriptionType(models.Model):
@@ -44,12 +45,24 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Override username to use email
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    # Keep username as primary identifier but use email for authentication
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
 
     def __str__(self):
         return self.email
+
+    def clean(self):
+        super().clean()
+        # Ensure email is always set
+        if not self.email:
+            raise ValidationError('Email is required.')
+
+    def save(self, *args, **kwargs):
+        # Ensure email is always set
+        if not self.email and self.username:
+            self.email = self.username
+        super().save(*args, **kwargs)
 
     @property
     def is_free_user(self):

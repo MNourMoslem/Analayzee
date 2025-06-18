@@ -17,6 +17,7 @@
 <!-- Hidden data elements for JavaScript -->
 <script id="tableData" type="application/json">{{ table_data|escapejs }}</script>
 <script id="tableColumns" type="application/json">{{ column_names|escapejs }}</script>
+{% csrf_token %}
 
 <!-- Top Navigation Bar -->
 <nav class="top-nav">
@@ -55,6 +56,13 @@
             <li class="sidebar-tab" data-tab="column-analysis">Column Analysis</li>
             <li class="sidebar-tab" data-tab="charts">Charts</li>
             <li class="sidebar-tab" data-tab="statistics">Statistics</li>
+            <li class="sidebar-tab premium-tab" data-tab="data-cleaning">
+                <span class="tab-content">
+                    <span class="premium-icon">👑</span>
+                    Data Cleaning
+                </span>
+                <span class="premium-badge">PRO</span>
+            </li>
             <li class="sidebar-tab" data-tab="export">Export</li>
             <li class="sidebar-tab" data-tab="settings">Settings</li>
         </ul>
@@ -225,6 +233,72 @@
                 </div>
             </div>
         </div>
+        <!-- Data Cleaning Tab Content -->
+        <div class="tab-content" id="data-cleaning-tab">
+            {% if user.is_authenticated %}
+            <div class="content-header">
+                <h1 class="content-title">Data Cleaning & Transformation</h1>
+                <p class="content-subtitle">Clean, transform, and prepare your data for better analysis</p>
+            </div>
+            <div class="data-cleaning-container">
+                <div class="cleaning-header">
+                    <h2 class="cleaning-title">Data Preparation Tools</h2>
+                    <p class="cleaning-subtitle">Select a column and choose a cleaning operation to apply</p>
+                </div>
+                <div class="cleaning-controls">
+                    <div class="cleaning-control-group">
+                        <label for="cleaningColumn">Select Column</label>
+                        <select id="cleaningColumn">
+                            <option value="">Choose a column...</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="cleaning-control-group">
+                        <label for="cleaningOperation">Operation</label>
+                        <select id="cleaningOperation">
+                            <option value="">Choose an operation...</option>
+                            <option value="missing-values">Handle Missing Values</option>
+                            <option value="outliers">Detect & Handle Outliers</option>
+                            <option value="data-type">Convert Data Type</option>
+                            <option value="text-cleaning">Text Cleaning</option>
+                            <option value="duplicates">Remove Duplicates</option>
+                            <option value="normalize">Normalize Data</option>
+                        </select>
+                    </div>
+                    <div class="cleaning-actions">
+                        <button id="applyCleaning" class="btn btn-primary">Apply Operation</button>
+                        <button id="resetCleaning" class="btn btn-secondary">Reset All</button>
+                        <button id="previewCleaning" class="btn btn-secondary">Preview Changes</button>
+                    </div>
+                </div>
+                <div class="cleaning-content">
+                    <div class="cleaning-preview" id="cleaningPreview">
+                        <div class="preview-placeholder">
+                            <p>Select a column and operation to see preview</p>
+                        </div>
+                    </div>
+                    <div class="cleaning-history" id="cleaningHistory">
+                        <h3>Operation History</h3>
+                        <div class="history-list">
+                            <!-- Operation history will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="auth-required-container">
+                <div class="auth-required-content">
+                    <div class="auth-icon">🔒</div>
+                    <h2>Authentication Required</h2>
+                    <p>Data cleaning and transformation features are available only to logged-in users.</p>
+                    <div class="auth-actions">
+                        <a href="{% url 'accounts:login' %}" class="btn btn-primary">Login</a>
+                        <a href="{% url 'accounts:signup' %}" class="btn btn-secondary">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
         <!-- Other Tab Contents -->
         <div class="tab-content" id="export-tab">
             <div class="content-header">
@@ -252,5 +326,6 @@
 <script src="{% static 'js/column-analysis.js' %}"></script>
 <script src="{% static 'js/charts.js' %}"></script>
 <script src="{% static 'js/statistics.js' %}"></script>
+<script src="{% static 'js/data-cleaning.js' %}"></script>
 <script src="{% static 'js/analysis.js' %}"></script>
 {% endblock %} 

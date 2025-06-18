@@ -9,4 +9,5 @@ urlpatterns = [
     path('analysis/', views.analysis_view, name='analysis'),
     path('api/file-info/', views.api_file_info, name='api_file_info'),
     path('api/charts-data/', views.api_charts_data, name='api_charts_data'),
+    path('apply-cleaning/', views.apply_cleaning_view, name='apply_cleaning'),
 ] 

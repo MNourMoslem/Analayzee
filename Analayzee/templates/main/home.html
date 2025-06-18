@@ -168,7 +168,25 @@
         }
     });
 
+    // Submit button click handler
+    submitBtn.addEventListener('click', handleSubmit);
+
     function handleFile(file) {
+        // Validate file type
+        const allowedTypes = ['.csv', '.xlsx', '.xls'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!allowedTypes.includes(fileExtension)) {
+            alert('Please select a valid file type: CSV, XLSX, or XLS');
+            return;
+        }
+
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB');
+            return;
+        }
+
         // Show file info
         fileName.textContent = file.name;
         fileSize.textContent = formatFileSize(file.size);
@@ -176,10 +194,59 @@
         submitBtn.style.display = 'inline-block';
         selectedFile = file;
     }
+
     function formatFileSize(bytes) {
         if (bytes < 1024) return bytes + ' B';
         else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         else return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function handleSubmit() {
+        if (!selectedFile) {
+            alert('Please select a file first');
+            return;
+        }
+
+        // Show loading state
+        submitBtn.style.display = 'none';
+        loading.style.display = 'block';
+
+        // Create FormData and submit
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch('{% url "main:upload_file" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Upload failed');
+            }
+        })
+        .then(data => {
+            if (data && data.redirect) {
+                window.location.href = data.redirect;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while uploading the file. Please try again.');
+            
+            // Reset UI
+            submitBtn.style.display = 'inline-block';
+            loading.style.display = 'none';
+        });
     }
 </script>
 {% endblock %} 

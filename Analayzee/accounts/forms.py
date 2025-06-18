@@ -9,39 +9,39 @@ class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(
         required=True,
         widget=forms.EmailInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Enter your email address'
         })
     )
     username = forms.CharField(
         widget=forms.TextInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Choose a username'
         })
     )
     password1 = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Create a password'
         })
     )
     password2 = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Confirm your password'
         })
     )
     first_name = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'First name (optional)'
         })
     )
     last_name = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Last name (optional)'
         })
     )
@@ -81,13 +81,13 @@ class CustomAuthenticationForm(AuthenticationForm):
     """Custom login form"""
     username = forms.EmailField(
         widget=forms.EmailInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Enter your email address'
         })
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Enter your password'
         })
     )
@@ -108,7 +108,7 @@ class PasswordResetForm(forms.Form):
     """Password reset form"""
     email = forms.EmailField(
         widget=forms.EmailInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Enter your email address'
         })
     )
@@ -124,19 +124,19 @@ class ProfileUpdateForm(forms.ModelForm):
     """User profile update form"""
     first_name = forms.CharField(
         widget=forms.TextInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'First name'
         })
     )
     last_name = forms.CharField(
         widget=forms.TextInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Last name'
         })
     )
     email = forms.EmailField(
         widget=forms.EmailInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Email address'
         })
     )
@@ -156,19 +156,19 @@ class ChangePasswordForm(forms.Form):
     """Change password form"""
     current_password = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Current password'
         })
     )
     new_password1 = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'New password'
         })
     )
     new_password2 = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'input',
+            'class': 'form-input',
             'placeholder': 'Confirm new password'
         })
     )

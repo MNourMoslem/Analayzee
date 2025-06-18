@@ -36,10 +36,15 @@ def signup_view(request):
             user.subscription_type = free_subscription
             user.save()
             
-            # Log the user in
-            login(request, user)
-            messages.success(request, 'Account created successfully! Welcome to Analayzee.')
-            return redirect('showcase')
+            # Authenticate the user before login to set backend
+            authenticated_user = authenticate(request, username=user.email, password=form.cleaned_data['password1'])
+            if authenticated_user is not None:
+                login(request, authenticated_user)
+                messages.success(request, 'Account created successfully! Welcome to Analayzee.')
+                return redirect('showcase')
+            else:
+                messages.error(request, 'There was a problem logging you in. Please try logging in manually.')
+                return redirect('accounts:login')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:

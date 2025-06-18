@@ -3,8 +3,11 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
 import pandas as pd
+import numpy as np
 import os
+import json
 from accounts.utils import set_dataframe_in_store, get_dataframe_from_store
 
 
@@ -124,3 +127,197 @@ def api_charts_data(request):
         return JsonResponse({
             'error': f'Error processing data: {str(e)}'
         }, status=500)
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def apply_cleaning_view(request):
+    """Handle data cleaning operations"""
+    try:
+        # Get parameters from request
+        column = request.POST.get('column')
+        operation = request.POST.get('operation')
+        data_json = request.POST.get('data')
+        
+        if not all([column, operation, data_json]):
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing required parameters'
+            })
+        
+        # Parse data
+        data = json.loads(data_json)
+        df = pd.DataFrame(data)
+        
+        # Apply cleaning operation
+        stats = apply_cleaning_operation(df, column, operation, request.POST)
+        
+        # Store updated DataFrame
+        set_dataframe_in_store(request, df)
+        
+        return JsonResponse({
+            'success': True,
+            'cleaned_data': df.to_dict('records'),
+            'stats': stats
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+def apply_cleaning_operation(df, column, operation, params):
+    """Apply specific cleaning operation to DataFrame"""
+    stats = {}
+    
+    if operation == 'missing-values':
+        stats = handle_missing_values(df, column, params)
+    elif operation == 'outliers':
+        stats = handle_outliers(df, column, params)
+    elif operation == 'data-type':
+        stats = convert_data_type(df, column, params)
+    elif operation == 'text-cleaning':
+        stats = clean_text(df, column, params)
+    elif operation == 'duplicates':
+        stats = remove_duplicates(df, params)
+    elif operation == 'normalize':
+        stats = normalize_data(df, column, params)
+    
+    return stats
+
+
+def handle_missing_values(df, column, params):
+    """Handle missing values in a column"""
+    action = params.get('action', 'fill-mean')
+    missing_count = df[column].isnull().sum()
+    stats = {'missing_filled': missing_count}
+    
+    if action == 'fill-mean' and pd.api.types.is_numeric_dtype(df[column]):
+        df[column].fillna(df[column].mean(), inplace=True)
+    elif action == 'fill-median' and pd.api.types.is_numeric_dtype(df[column]):
+        df[column].fillna(df[column].median(), inplace=True)
+    elif action == 'fill-zero':
+        df[column].fillna(0, inplace=True)
+    elif action == 'fill-custom':
+        custom_value = params.get('custom_value', '')
+        df[column].fillna(custom_value, inplace=True)
+    elif action == 'drop':
+        df.dropna(subset=[column], inplace=True)
+        stats['rows_affected'] = missing_count
+    
+    return stats
+
+
+def handle_outliers(df, column, params):
+    """Handle outliers in a numeric column"""
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        return {'error': 'Column is not numeric'}
+    
+    action = params.get('action', 'remove')
+    
+    # Calculate outliers using IQR method
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    
+    outliers_mask = (df[column] < lower_bound) | (df[column] > upper_bound)
+    outliers_count = outliers_mask.sum()
+    
+    stats = {'outliers_removed': outliers_count}
+    
+    if action == 'remove':
+        df.drop(df[outliers_mask].index, inplace=True)
+        stats['rows_affected'] = outliers_count
+    elif action == 'cap':
+        df.loc[df[column] < lower_bound, column] = lower_bound
+        df.loc[df[column] > upper_bound, column] = upper_bound
+    elif action == 'flag':
+        df[f'{column}_outlier'] = outliers_mask
+    
+    return stats
+
+
+def convert_data_type(df, column, params):
+    """Convert data type of a column"""
+    target_type = params.get('target_type', 'string')
+    stats = {'type_converted': True}
+    
+    try:
+        if target_type == 'string':
+            df[column] = df[column].astype(str)
+        elif target_type == 'number':
+            df[column] = pd.to_numeric(df[column], errors='coerce')
+        elif target_type == 'date':
+            df[column] = pd.to_datetime(df[column], errors='coerce')
+        elif target_type == 'boolean':
+            df[column] = df[column].astype(bool)
+    except Exception as e:
+        stats['error'] = f'Conversion failed: {str(e)}'
+    
+    return stats
+
+
+def clean_text(df, column, params):
+    """Clean text in a column"""
+    actions = params.get('actions', [])
+    stats = {'text_cleaned': True}
+    
+    if 'trim' in actions:
+        df[column] = df[column].astype(str).str.strip()
+    if 'lowercase' in actions:
+        df[column] = df[column].astype(str).str.lower()
+    if 'uppercase' in actions:
+        df[column] = df[column].astype(str).str.upper()
+    if 'titlecase' in actions:
+        df[column] = df[column].astype(str).str.title()
+    if 'remove-special' in actions:
+        df[column] = df[column].astype(str).str.replace(r'[^a-zA-Z0-9\s]', '', regex=True)
+    
+    return stats
+
+
+def remove_duplicates(df, params):
+    """Remove duplicate rows"""
+    action = params.get('action', 'remove-all')
+    original_count = len(df)
+    
+    if action == 'remove-all':
+        df.drop_duplicates(inplace=True)
+    elif action == 'keep-first':
+        df.drop_duplicates(keep='first', inplace=True)
+    elif action == 'keep-last':
+        df.drop_duplicates(keep='last', inplace=True)
+    
+    removed_count = original_count - len(df)
+    return {'duplicates_removed': removed_count, 'rows_affected': removed_count}
+
+
+def normalize_data(df, column, params):
+    """Normalize numeric data"""
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        return {'error': 'Column is not numeric'}
+    
+    method = params.get('method', 'min-max')
+    stats = {'normalized': True}
+    
+    if method == 'min-max':
+        min_val = df[column].min()
+        max_val = df[column].max()
+        if max_val != min_val:
+            df[column] = (df[column] - min_val) / (max_val - min_val)
+    elif method == 'z-score':
+        mean_val = df[column].mean()
+        std_val = df[column].std()
+        if std_val != 0:
+            df[column] = (df[column] - mean_val) / std_val
+    elif method == 'decimal':
+        max_abs = df[column].abs().max()
+        if max_abs != 0:
+            df[column] = df[column] / max_abs
+    
+    return stats
