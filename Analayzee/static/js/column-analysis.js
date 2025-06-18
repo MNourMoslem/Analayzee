@@ -7,6 +7,23 @@ class ColumnAnalyzer {
         this.initializeAnalysis();
     }
     
+    // Utility function to format column names
+    formatColumnName(columnName) {
+        // Replace underscores with spaces
+        let formatted = columnName.replace(/_/g, ' ');
+        
+        // Handle camelCase by adding spaces before capital letters
+        formatted = formatted.replace(/([a-z])([A-Z])/g, '$1 $2');
+        
+        // Capitalize first letter of each word
+        formatted = formatted.replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Handle special cases like "ID" -> "ID", "URL" -> "URL"
+        formatted = formatted.replace(/\b(Id|Url|Api|Sql|Html|Css|Js|Xml|Json)\b/gi, (match) => match.toUpperCase());
+        
+        return formatted;
+    }
+    
     initializeAnalysis() {
         this.columns.forEach(column => {
             this.analysis[column] = this.analyzeColumn(column);
@@ -50,15 +67,33 @@ class ColumnAnalyzer {
         const upperBound = q3 + 1.5 * iqr;
         const outliers = values.filter(val => val < lowerBound || val > upperBound);
         
+        // Additional insights
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min;
+        const coefficientOfVariation = (stdDev / mean) * 100;
+        
+        // Data quality insights
+        const missingPercentage = ((this.data.length - n) / this.data.length) * 100;
+        const zeroCount = values.filter(v => v === 0).length;
+        const negativeCount = values.filter(v => v < 0).length;
+        const positiveCount = values.filter(v => v > 0).length;
+        
+        // Distribution insights
+        const isNormal = Math.abs(skewness) < 1 && Math.abs(kurtosis) < 2;
+        const isSkewed = Math.abs(skewness) > 1;
+        const hasHighVariability = coefficientOfVariation > 50;
+        
         return {
             type: 'numeric',
             column: column,
             basic: {
                 count: n,
                 missing: this.data.length - n,
-                min: Math.min(...values),
-                max: Math.max(...values),
-                range: Math.max(...values) - Math.min(...values),
+                missingPercentage: missingPercentage,
+                min: min,
+                max: max,
+                range: range,
                 sum: sum,
                 mean: mean,
                 median: median,
@@ -67,7 +102,7 @@ class ColumnAnalyzer {
             dispersion: {
                 variance: variance,
                 stdDev: stdDev,
-                coefficientOfVariation: (stdDev / mean) * 100,
+                coefficientOfVariation: coefficientOfVariation,
                 iqr: iqr,
                 q1: q1,
                 q3: q3
@@ -76,7 +111,10 @@ class ColumnAnalyzer {
                 skewness: skewness,
                 kurtosis: kurtosis,
                 outliers: outliers.length,
-                outlierPercentage: (outliers.length / n) * 100
+                outlierPercentage: (outliers.length / n) * 100,
+                isNormal: isNormal,
+                isSkewed: isSkewed,
+                hasHighVariability: hasHighVariability
             },
             percentiles: {
                 p10: this.calculatePercentile(sorted, 10),
@@ -84,6 +122,14 @@ class ColumnAnalyzer {
                 p50: median,
                 p75: q3,
                 p90: this.calculatePercentile(sorted, 90)
+            },
+            dataQuality: {
+                zeroCount: zeroCount,
+                zeroPercentage: (zeroCount / n) * 100,
+                negativeCount: negativeCount,
+                negativePercentage: (negativeCount / n) * 100,
+                positiveCount: positiveCount,
+                positivePercentage: (positiveCount / n) * 100
             },
             distribution: this.calculateDistribution(values, 10)
         };
@@ -100,16 +146,42 @@ class ColumnAnalyzer {
         const mostFrequent = Object.entries(valueCounts)
             .sort(([,a], [,b]) => b - a)[0];
         
+        // Additional insights
+        const missingPercentage = ((this.data.length - totalCount) / this.data.length) * 100;
+        const emptyStringCount = values.filter(v => v === '' || v === ' ').length;
+        const nullLikeCount = values.filter(v => v === 'null' || v === 'NULL' || v === 'None' || v === 'none').length;
+        
+        // Distribution insights
+        const isBalanced = uniqueValues.length > 1 && 
+            Math.max(...Object.values(valueCounts)) / Math.min(...Object.values(valueCounts)) < 3;
+        const hasHighCardinality = uniqueValues.length > totalCount * 0.5;
+        const isLowCardinality = uniqueValues.length < 5;
+        
         return {
             type: 'categorical',
             column: column,
             basic: {
                 count: totalCount,
                 missing: this.data.length - totalCount,
+                missingPercentage: missingPercentage,
                 uniqueValues: uniqueValues.length,
                 mostFrequent: mostFrequent[0],
                 mostFrequentCount: mostFrequent[1],
                 mostFrequentPercentage: (mostFrequent[1] / totalCount) * 100
+            },
+            dataQuality: {
+                emptyStringCount: emptyStringCount,
+                emptyStringPercentage: (emptyStringCount / totalCount) * 100,
+                nullLikeCount: nullLikeCount,
+                nullLikePercentage: (nullLikeCount / totalCount) * 100,
+                validValues: totalCount - emptyStringCount - nullLikeCount,
+                validPercentage: ((totalCount - emptyStringCount - nullLikeCount) / totalCount) * 100
+            },
+            insights: {
+                isBalanced: isBalanced,
+                hasHighCardinality: hasHighCardinality,
+                isLowCardinality: isLowCardinality,
+                diversityIndex: uniqueValues.length / totalCount
             },
             distribution: Object.entries(valueCounts).map(([value, count]) => ({
                 value: value,
@@ -215,12 +287,11 @@ class ColumnAnalyzer {
     createColumnCard(analysis) {
         const card = document.createElement('div');
         card.className = 'column-card';
-        card.onclick = () => this.showDetailedAnalysis(analysis);
         
         if (analysis.type === 'empty') {
             card.innerHTML = `
                 <div class="column-card-header">
-                    <div class="column-name">${analysis.column}</div>
+                    <div class="column-name">${this.formatColumnName(analysis.column)}</div>
                     <div class="column-type">Empty Column</div>
                 </div>
                 <div class="column-card-body">
@@ -235,11 +306,23 @@ class ColumnAnalyzer {
                         </div>
                     </div>
                 </div>
+                <div class="column-card-footer">
+                    <div class="card-actions">
+                        <button class="view-details-btn">View Details</button>
+                        <button class="export-btn" title="Export Analysis">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             `;
         } else if (analysis.type === 'numeric') {
             card.innerHTML = `
                 <div class="column-card-header">
-                    <div class="column-name">${analysis.column}</div>
+                    <div class="column-name">${this.formatColumnName(analysis.column)}</div>
                     <div class="column-type">Numeric</div>
                 </div>
                 <div class="column-card-body">
@@ -263,13 +346,22 @@ class ColumnAnalyzer {
                     </div>
                 </div>
                 <div class="column-card-footer">
-                    <button class="view-details-btn">View Detailed Analysis</button>
+                    <div class="card-actions">
+                        <button class="view-details-btn">View Details</button>
+                        <button class="export-btn" title="Export Analysis">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             `;
         } else {
             card.innerHTML = `
                 <div class="column-card-header">
-                    <div class="column-name">${analysis.column}</div>
+                    <div class="column-name">${this.formatColumnName(analysis.column)}</div>
                     <div class="column-type">Categorical</div>
                 </div>
                 <div class="column-card-body">
@@ -293,12 +385,124 @@ class ColumnAnalyzer {
                     </div>
                 </div>
                 <div class="column-card-footer">
-                    <button class="view-details-btn">View Detailed Analysis</button>
+                    <div class="card-actions">
+                        <button class="view-details-btn">View Details</button>
+                        <button class="export-btn" title="Export Analysis">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7,10 12,15 17,10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             `;
         }
         
+        // Store analysis data and analyzer reference
+        card.analysis = analysis;
+        card.analyzer = this;
+        
+        // Add event listeners
+        const viewDetailsBtn = card.querySelector('.view-details-btn');
+        const exportBtn = card.querySelector('.export-btn');
+        
+        viewDetailsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showDetailedAnalysis(analysis);
+        });
+        
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.exportAnalysis(analysis);
+        });
+        
         return card;
+    }
+    
+    exportAnalysis(analysis) {
+        try {
+            // Create export data with version information
+            const exportData = {
+                metadata: {
+                    version: "1.0.0",
+                    format: "analayzee-column-analysis",
+                    generated: new Date().toISOString(),
+                    tool: "Analayzee Column Analyzer",
+                    description: "Column analysis data exported from Analayzee"
+                },
+                dataset: {
+                    totalRows: this.data.length,
+                    totalColumns: this.columns.length,
+                    columnName: analysis.column,
+                    formattedColumnName: this.formatColumnName(analysis.column)
+                },
+                analysis: analysis
+            };
+            
+            // Create and download JSON file
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `analayzee-column-analysis-${analysis.column.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            this.showSuccess(`Exported analysis for "${this.formatColumnName(analysis.column)}"`);
+        } catch (error) {
+            console.error('Error exporting analysis:', error);
+            this.showError('Failed to export analysis');
+        }
+    }
+    
+    showSuccess(message) {
+        const successDiv = document.createElement('div');
+        successDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 300px;
+        `;
+        successDiv.textContent = message;
+        
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            successDiv.remove();
+        }, 3000);
+    }
+    
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 300px;
+        `;
+        errorDiv.textContent = message;
+        
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            errorDiv.remove();
+        }, 3000);
     }
     
     showDetailedAnalysis(analysis) {
@@ -336,154 +540,161 @@ class ColumnAnalyzer {
         return `
             <div class="column-modal">
                 <div class="column-modal-header">
-                    <div class="column-modal-title">${analysis.column}</div>
+                    <div class="column-modal-title">${this.formatColumnName(analysis.column)}</div>
                     <div class="column-modal-subtitle">Numeric Column Analysis</div>
                     <button class="column-modal-close">&times;</button>
                 </div>
                 <div class="column-modal-body">
                     <div class="analysis-section">
-                        <h3 class="analysis-section-title">Basic Statistics</h3>
+                        <h3 class="analysis-section-title">📊 Basic Statistics</h3>
                         <div class="analysis-grid-2">
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Count</div>
+                                <div class="analysis-card-title">Total Values</div>
                                 <div class="analysis-card-value">${analysis.basic.count}</div>
-                                <div class="analysis-card-formula">n = Σ(x_i)</div>
+                                <div class="analysis-card-description">Valid data points</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Mean</div>
+                                <div class="analysis-card-title">Missing Values</div>
+                                <div class="analysis-card-value">${analysis.basic.missing} (${analysis.basic.missingPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Empty or null entries</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Mean (Average)</div>
                                 <div class="analysis-card-value">${analysis.basic.mean.toFixed(4)}</div>
-                                <div class="analysis-card-formula">μ = Σ(x_i) / n</div>
+                                <div class="analysis-card-description">Arithmetic average</div>
                             </div>
                             <div class="analysis-card">
                                 <div class="analysis-card-title">Median</div>
                                 <div class="analysis-card-value">${analysis.basic.median.toFixed(4)}</div>
-                                <div class="analysis-card-formula">Q₂ = middle value</div>
+                                <div class="analysis-card-description">Middle value (50th percentile)</div>
                             </div>
                             <div class="analysis-card">
                                 <div class="analysis-card-title">Mode</div>
                                 <div class="analysis-card-value">${analysis.basic.mode.join(', ')}</div>
-                                <div class="analysis-card-formula">most frequent value(s)</div>
+                                <div class="analysis-card-description">Most frequent value(s)</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Standard Deviation</div>
-                                <div class="analysis-card-value">${analysis.dispersion.stdDev.toFixed(4)}</div>
-                                <div class="analysis-card-formula">σ = √(Σ(x_i - μ)² / n)</div>
-                            </div>
-                            <div class="analysis-card">
-                                <div class="analysis-card-title">Variance</div>
-                                <div class="analysis-card-value">${analysis.dispersion.variance.toFixed(4)}</div>
-                                <div class="analysis-card-formula">σ² = Σ(x_i - μ)² / n</div>
+                                <div class="analysis-card-title">Range</div>
+                                <div class="analysis-card-value">${analysis.basic.range.toFixed(4)}</div>
+                                <div class="analysis-card-description">Max - Min</div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="analysis-section">
-                        <h3 class="analysis-section-title">Dispersion & Shape</h3>
+                        <h3 class="analysis-section-title">📈 Dispersion & Variability</h3>
                         <div class="analysis-grid-2">
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Range</div>
-                                <div class="analysis-card-value">${analysis.basic.range.toFixed(4)}</div>
-                                <div class="analysis-card-formula">max - min</div>
-                            </div>
-                            <div class="analysis-card">
-                                <div class="analysis-card-title">IQR</div>
-                                <div class="analysis-card-value">${analysis.dispersion.iqr.toFixed(4)}</div>
-                                <div class="analysis-card-formula">Q₃ - Q₁</div>
+                                <div class="analysis-card-title">Standard Deviation</div>
+                                <div class="analysis-card-value">${analysis.dispersion.stdDev.toFixed(4)}</div>
+                                <div class="analysis-card-description">${analysis.shape.hasHighVariability ? 'High variability' : 'Moderate variability'}</div>
                             </div>
                             <div class="analysis-card">
                                 <div class="analysis-card-title">Coefficient of Variation</div>
                                 <div class="analysis-card-value">${analysis.dispersion.coefficientOfVariation.toFixed(2)}%</div>
-                                <div class="analysis-card-formula">CV = (σ/μ) × 100</div>
+                                <div class="analysis-card-description">${analysis.shape.hasHighVariability ? 'High relative variability' : 'Low relative variability'}</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Skewness</div>
-                                <div class="analysis-card-value">${analysis.shape.skewness.toFixed(4)}</div>
-                                <div class="analysis-card-formula">γ₁ = Σ((x_i - μ)³/σ³) / n</div>
+                                <div class="analysis-card-title">Interquartile Range (IQR)</div>
+                                <div class="analysis-card-value">${analysis.dispersion.iqr.toFixed(4)}</div>
+                                <div class="analysis-card-description">Middle 50% of data</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Kurtosis</div>
-                                <div class="analysis-card-value">${analysis.shape.kurtosis.toFixed(4)}</div>
-                                <div class="analysis-card-formula">γ₂ = Σ((x_i - μ)⁴/σ⁴) / n - 3</div>
-                            </div>
-                            <div class="analysis-card">
-                                <div class="analysis-card-title">Outliers</div>
-                                <div class="analysis-card-value">${analysis.shape.outliers} (${analysis.shape.outlierPercentage.toFixed(1)}%)</div>
-                                <div class="analysis-card-formula">IQR × 1.5 rule</div>
+                                <div class="analysis-card-title">Variance</div>
+                                <div class="analysis-card-value">${analysis.dispersion.variance.toFixed(4)}</div>
+                                <div class="analysis-card-description">Average squared deviation</div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="analysis-section">
-                        <h3 class="analysis-section-title">Percentiles</h3>
+                        <h3 class="analysis-section-title">📊 Percentiles</h3>
                         <div class="analysis-grid-2">
                             <div class="analysis-card">
                                 <div class="analysis-card-title">10th Percentile</div>
                                 <div class="analysis-card-value">${analysis.percentiles.p10.toFixed(4)}</div>
+                                <div class="analysis-card-description">10% of values are below this</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">25th Percentile (Q₁)</div>
+                                <div class="analysis-card-title">25th Percentile (Q1)</div>
                                 <div class="analysis-card-value">${analysis.percentiles.p25.toFixed(4)}</div>
+                                <div class="analysis-card-description">25% of values are below this</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">50th Percentile (Q₂)</div>
-                                <div class="analysis-card-value">${analysis.percentiles.p50.toFixed(4)}</div>
-                            </div>
-                            <div class="analysis-card">
-                                <div class="analysis-card-title">75th Percentile (Q₃)</div>
+                                <div class="analysis-card-title">75th Percentile (Q3)</div>
                                 <div class="analysis-card-value">${analysis.percentiles.p75.toFixed(4)}</div>
+                                <div class="analysis-card-description">75% of values are below this</div>
                             </div>
                             <div class="analysis-card">
                                 <div class="analysis-card-title">90th Percentile</div>
                                 <div class="analysis-card-value">${analysis.percentiles.p90.toFixed(4)}</div>
+                                <div class="analysis-card-description">90% of values are below this</div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="formula-section">
-                        <h4 class="formula-title">Mathematical Formulas</h4>
-                        <div class="formula-content">
-// Mean (Arithmetic Average)
-μ = (x₁ + x₂ + ... + xₙ) / n
-
-// Variance
-σ² = Σ(x_i - μ)² / n
-
-// Standard Deviation
-σ = √σ² = √(Σ(x_i - μ)² / n)
-
-// Skewness (Fisher-Pearson coefficient)
-γ₁ = [n/(n-1)(n-2)] × Σ((x_i - μ)³/σ³)
-
-// Kurtosis (Excess kurtosis)
-γ₂ = [n(n+1)/(n-1)(n-2)(n-3)] × Σ((x_i - μ)⁴/σ⁴) - 3(n-1)²/(n-2)(n-3)
-
-// Coefficient of Variation
-CV = (σ/μ) × 100%
-
-// Interquartile Range
-IQR = Q₃ - Q₁
-
-// Outlier Detection (IQR method)
-Lower bound = Q₁ - 1.5 × IQR
-Upper bound = Q₃ + 1.5 × IQR
-                        </div>
-                        <div class="formula-explanation">
-                            <strong>Skewness:</strong> Measures asymmetry. γ₁ > 0: right-skewed, γ₁ < 0: left-skewed, γ₁ ≈ 0: symmetric<br>
-                            <strong>Kurtosis:</strong> Measures tail heaviness. γ₂ > 0: heavy tails, γ₂ < 0: light tails, γ₂ ≈ 0: normal distribution<br>
-                            <strong>Coefficient of Variation:</strong> Relative measure of dispersion, useful for comparing different scales
+                    <div class="analysis-section">
+                        <h3 class="analysis-section-title">🔍 Data Quality & Distribution</h3>
+                        <div class="analysis-grid-2">
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Zero Values</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.zeroCount} (${analysis.dataQuality.zeroPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Values equal to zero</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Negative Values</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.negativeCount} (${analysis.dataQuality.negativePercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Values less than zero</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Positive Values</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.positiveCount} (${analysis.dataQuality.positivePercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Values greater than zero</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Outliers</div>
+                                <div class="analysis-card-value">${analysis.shape.outliers} (${analysis.shape.outlierPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Values outside 1.5 × IQR range</div>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="analysis-section">
-                        <h3 class="analysis-section-title">Distribution Analysis</h3>
+                        <h3 class="analysis-section-title">📋 Distribution Shape</h3>
+                        <div class="analysis-grid-2">
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Skewness</div>
+                                <div class="analysis-card-value">${analysis.shape.skewness.toFixed(4)}</div>
+                                <div class="analysis-card-description">${analysis.shape.isSkewed ? (analysis.shape.skewness > 0 ? 'Right-skewed distribution' : 'Left-skewed distribution') : 'Approximately symmetric'}</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Kurtosis</div>
+                                <div class="analysis-card-value">${analysis.shape.kurtosis.toFixed(4)}</div>
+                                <div class="analysis-card-description">${Math.abs(analysis.shape.kurtosis) > 2 ? 'Heavy tails' : 'Normal tails'}</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Distribution Type</div>
+                                <div class="analysis-card-value">${analysis.shape.isNormal ? 'Normal-like' : 'Non-normal'}</div>
+                                <div class="analysis-card-description">Based on skewness and kurtosis</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Data Completeness</div>
+                                <div class="analysis-card-value">${(100 - analysis.basic.missingPercentage).toFixed(1)}%</div>
+                                <div class="analysis-card-description">Percentage of valid data</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-section">
+                        <h3 class="analysis-section-title">📊 Value Distribution</h3>
                         <div class="distribution-section">
-                            ${analysis.distribution.map(bin => `
+                            ${analysis.distribution.map(item => `
                                 <div class="distribution-bar">
-                                    <div class="distribution-label">${bin.range}</div>
+                                    <div class="distribution-label">${item.range}</div>
                                     <div class="distribution-bar-bg">
-                                        <div class="distribution-bar-fill" style="width: ${bin.percentage}%"></div>
+                                        <div class="distribution-bar-fill" style="width: ${item.percentage}%"></div>
                                     </div>
-                                    <div class="distribution-value">${bin.count} (${bin.percentage.toFixed(1)}%)</div>
+                                    <div class="distribution-value">${item.count} (${item.percentage.toFixed(1)}%)</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -497,45 +708,103 @@ Upper bound = Q₃ + 1.5 × IQR
         return `
             <div class="column-modal">
                 <div class="column-modal-header">
-                    <div class="column-modal-title">${analysis.column}</div>
+                    <div class="column-modal-title">${this.formatColumnName(analysis.column)}</div>
                     <div class="column-modal-subtitle">Categorical Column Analysis</div>
                     <button class="column-modal-close">&times;</button>
                 </div>
                 <div class="column-modal-body">
                     <div class="analysis-section">
-                        <h3 class="analysis-section-title">Basic Statistics</h3>
+                        <h3 class="analysis-section-title">📊 Basic Statistics</h3>
                         <div class="analysis-grid-2">
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Total Count</div>
+                                <div class="analysis-card-title">Total Values</div>
                                 <div class="analysis-card-value">${analysis.basic.count}</div>
+                                <div class="analysis-card-description">Valid data points</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Unique Values</div>
+                                <div class="analysis-card-title">Missing Values</div>
+                                <div class="analysis-card-value">${analysis.basic.missing} (${analysis.basic.missingPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Empty or null entries</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Unique Categories</div>
                                 <div class="analysis-card-value">${analysis.basic.uniqueValues}</div>
+                                <div class="analysis-card-description">Distinct values</div>
                             </div>
                             <div class="analysis-card">
                                 <div class="analysis-card-title">Most Frequent</div>
                                 <div class="analysis-card-value">${analysis.basic.mostFrequent}</div>
+                                <div class="analysis-card-description">Most common value</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Frequency</div>
-                                <div class="analysis-card-value">${analysis.basic.mostFrequentCount}</div>
+                                <div class="analysis-card-title">Most Frequent Count</div>
+                                <div class="analysis-card-value">${analysis.basic.mostFrequentCount} (${analysis.basic.mostFrequentPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Frequency of top value</div>
                             </div>
                             <div class="analysis-card">
-                                <div class="analysis-card-title">Percentage</div>
-                                <div class="analysis-card-value">${analysis.basic.mostFrequentPercentage.toFixed(1)}%</div>
-                            </div>
-                            <div class="analysis-card">
-                                <div class="analysis-card-title">Missing Values</div>
-                                <div class="analysis-card-value">${analysis.basic.missing}</div>
+                                <div class="analysis-card-title">Data Completeness</div>
+                                <div class="analysis-card-value">${(100 - analysis.basic.missingPercentage).toFixed(1)}%</div>
+                                <div class="analysis-card-description">Percentage of valid data</div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="analysis-section">
-                        <h3 class="analysis-section-title">Value Distribution</h3>
+                        <h3 class="analysis-section-title">🔍 Data Quality</h3>
+                        <div class="analysis-grid-2">
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Empty Strings</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.emptyStringCount} (${analysis.dataQuality.emptyStringPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Blank or whitespace values</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Null-like Values</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.nullLikeCount} (${analysis.dataQuality.nullLikePercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">"null", "NULL", "None" values</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Valid Values</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.validValues} (${analysis.dataQuality.validPercentage.toFixed(1)}%)</div>
+                                <div class="analysis-card-description">Meaningful data points</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Diversity Index</div>
+                                <div class="analysis-card-value">${(analysis.insights.diversityIndex * 100).toFixed(1)}%</div>
+                                <div class="analysis-card-description">Unique values / Total values</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-section">
+                        <h3 class="analysis-section-title">📋 Distribution Insights</h3>
+                        <div class="analysis-grid-2">
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Distribution Type</div>
+                                <div class="analysis-card-value">${analysis.insights.isBalanced ? 'Balanced' : 'Imbalanced'}</div>
+                                <div class="analysis-card-description">${analysis.insights.isBalanced ? 'Values are relatively evenly distributed' : 'Values are unevenly distributed'}</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Cardinality</div>
+                                <div class="analysis-card-value">${analysis.insights.hasHighCardinality ? 'High' : analysis.insights.isLowCardinality ? 'Low' : 'Medium'}</div>
+                                <div class="analysis-card-description">${analysis.insights.hasHighCardinality ? 'Many unique values' : analysis.insights.isLowCardinality ? 'Few unique values' : 'Moderate unique values'}</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Concentration</div>
+                                <div class="analysis-card-value">${analysis.basic.mostFrequentPercentage > 50 ? 'High' : analysis.basic.mostFrequentPercentage > 25 ? 'Medium' : 'Low'}</div>
+                                <div class="analysis-card-description">${analysis.basic.mostFrequentPercentage > 50 ? 'Top value dominates' : analysis.basic.mostFrequentPercentage > 25 ? 'Moderate concentration' : 'Well distributed'}</div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-card-title">Data Quality Score</div>
+                                <div class="analysis-card-value">${analysis.dataQuality.validPercentage > 90 ? 'Excellent' : analysis.dataQuality.validPercentage > 75 ? 'Good' : analysis.dataQuality.validPercentage > 50 ? 'Fair' : 'Poor'}</div>
+                                <div class="analysis-card-description">Based on valid data percentage</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-section">
+                        <h3 class="analysis-section-title">📊 Value Distribution</h3>
                         <div class="distribution-section">
-                            ${analysis.distribution.map(item => `
+                            ${analysis.distribution.slice(0, 10).map(item => `
                                 <div class="distribution-bar">
                                     <div class="distribution-label">${item.value}</div>
                                     <div class="distribution-bar-bg">
@@ -544,37 +813,11 @@ Upper bound = Q₃ + 1.5 × IQR
                                     <div class="distribution-value">${item.count} (${item.percentage.toFixed(1)}%)</div>
                                 </div>
                             `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="formula-section">
-                        <h4 class="formula-title">Categorical Analysis Formulas</h4>
-                        <div class="formula-content">
-// Frequency
-f_i = count of value i
-
-// Relative Frequency
-p_i = f_i / n
-
-// Percentage
-P_i = p_i × 100%
-
-// Mode
-Mode = value with highest frequency
-
-// Entropy (Information Theory)
-H = -Σ(p_i × log₂(p_i))
-
-// Gini Index (Diversity Measure)
-G = 1 - Σ(p_i²)
-
-// Simpson's Diversity Index
-D = Σ(p_i²)
-                        </div>
-                        <div class="formula-explanation">
-                            <strong>Entropy:</strong> Measures uncertainty/information content. Higher entropy = more diverse data<br>
-                            <strong>Gini Index:</strong> Measures inequality/diversity. G = 0: single category, G = 1: maximum diversity<br>
-                            <strong>Simpson's Index:</strong> Probability that two randomly selected items are the same category
+                            ${analysis.distribution.length > 10 ? `
+                                <div class="distribution-summary">
+                                    <em>... and ${analysis.distribution.length - 10} more categories</em>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -586,7 +829,7 @@ D = Σ(p_i²)
         return `
             <div class="column-modal">
                 <div class="column-modal-header">
-                    <div class="column-modal-title">${analysis.column}</div>
+                    <div class="column-modal-title">${this.formatColumnName(analysis.column)}</div>
                     <div class="column-modal-subtitle">Empty Column</div>
                     <button class="column-modal-close">&times;</button>
                 </div>
