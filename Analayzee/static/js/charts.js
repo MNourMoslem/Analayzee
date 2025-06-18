@@ -78,7 +78,7 @@ class ChartsManager {
             if (!response.ok) {
                 throw new Error('API request failed');
             }
-            
+
             const result = await response.json();
             
             if (result.success) {
@@ -600,25 +600,47 @@ class ChartsManager {
             this.showError('No charts to export');
             return;
         }
-        
+
         try {
-            const charts = this.currentCharts.map(chartId => {
+            if (this.currentCharts.length === 1) {
+                // Export single chart as PNG
+                const chartId = this.currentCharts[0];
                 const chart = this.charts.get(chartId);
-                return chart ? chart.toBase64Image() : null;
-            }).filter(Boolean);
-            
-            if (charts.length === 0) {
-                this.showError('No charts available for export');
-                return;
+                const metadata = this.chartMetadata.get(chartId);
+                if (chart) {
+                    const link = document.createElement('a');
+                    link.download = `chart-${metadata.title ? metadata.title.replace(/[^a-zA-Z0-9]/g, '-') : 'chart'}-${Date.now()}.png`;
+                    link.href = chart.toBase64Image();
+                    link.click();
+                    this.showSuccess('Exported chart as PNG');
+                }
+            } else {
+                // Export multiple charts as ZIP
+                if (typeof JSZip === 'undefined') {
+                    this.showError('ZIP export requires JSZip library.');
+                    return;
+                }
+                const zip = new JSZip();
+                const timestamp = Date.now();
+                this.currentCharts.forEach((chartId, index) => {
+                    const chart = this.charts.get(chartId);
+                    const metadata = this.chartMetadata.get(chartId);
+                    if (chart) {
+                        const base64 = chart.toBase64Image();
+                        const filename = `chart-${index + 1}-${metadata.title ? metadata.title.replace(/[^a-zA-Z0-9]/g, '-') : 'chart'}.png`;
+                        const base64Data = base64.split(',')[1];
+                        zip.file(filename, base64Data, {base64: true});
+                    }
+                });
+                zip.generateAsync({type: 'blob'}).then(content => {
+                    const link = document.createElement('a');
+                    link.download = `analayzee-charts-${timestamp}.zip`;
+                    link.href = URL.createObjectURL(content);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    this.showSuccess(`Exported ${this.currentCharts.length} charts as ZIP file`);
+                });
             }
-            
-            // Create download link for first chart (can be extended for multiple)
-            const link = document.createElement('a');
-            link.download = `analayzee-chart-${Date.now()}.png`;
-            link.href = charts[0];
-            link.click();
-            
-            this.showSuccess(`Exported ${charts.length} chart(s)`);
         } catch (error) {
             console.error('Error exporting charts:', error);
             this.showError('Failed to export charts');
