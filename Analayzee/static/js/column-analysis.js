@@ -886,16 +886,76 @@ function initializeColumnAnalysis() {
             console.log('window.magicalTable.data:', window.magicalTable?.data);
             console.log('window.magicalTable.columns:', window.magicalTable?.columns);
             
-            if (window.magicalTable && window.magicalTable.data) {
-                console.log('Creating ColumnAnalyzer...');
+            // Try to get data from magical table first
+            if (window.magicalTable && window.magicalTable.data && window.magicalTable.columns) {
+                console.log('Creating ColumnAnalyzer with magical table data...');
                 const analyzer = new ColumnAnalyzer(window.magicalTable.data, window.magicalTable.columns);
                 console.log('Rendering column cards...');
                 analyzer.renderColumnCards();
             } else {
-                console.error('No magical table data available');
+                // Fallback: try to get data from the page
+                console.log('Magical table not available, trying to get data from page...');
+                const tableDataElement = document.getElementById('tableData');
+                const tableColumnsElement = document.getElementById('tableColumns');
+                
+                if (tableDataElement && tableColumnsElement) {
+                    try {
+                        const data = JSON.parse(tableDataElement.textContent);
+                        const columns = JSON.parse(tableColumnsElement.textContent);
+                        console.log('Got data from page elements:', { data: data.length, columns });
+                        
+                        if (data && data.length > 0 && columns && columns.length > 0) {
+                            console.log('Creating ColumnAnalyzer with page data...');
+                            const analyzer = new ColumnAnalyzer(data, columns);
+                            console.log('Rendering column cards...');
+                            analyzer.renderColumnCards();
+                        } else {
+                            console.error('No valid data found in page elements');
+                            showColumnAnalysisError('No data available for analysis');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing data from page:', error);
+                        showColumnAnalysisError('Error loading data for analysis');
+                    }
+                } else {
+                    console.error('No data elements found on page');
+                    showColumnAnalysisError('No data available for analysis');
+                }
             }
         });
+        
+        // If column analysis tab is active by default, trigger it immediately
+        const columnAnalysisContent = document.getElementById('column-analysis-tab');
+        if (columnAnalysisContent && columnAnalysisContent.classList.contains('active')) {
+            console.log('Column analysis tab is active by default, triggering analysis...');
+            columnAnalysisTab.click();
+        }
     } else {
         console.error('Column analysis tab not found');
+    }
+}
+
+// Helper function to show error message in column analysis tab
+function showColumnAnalysisError(message) {
+    const grid = document.getElementById('columnAnalysisGrid');
+    if (grid) {
+        grid.innerHTML = `
+            <div style="
+                grid-column: 1 / -1;
+                text-align: center;
+                padding: 3rem;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 8px;
+                color: #991b1b;
+            ">
+                <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+                <h3 style="margin: 0 0 0.5rem 0; color: #991b1b;">Analysis Unavailable</h3>
+                <p style="margin: 0; color: #7f1d1d;">${message}</p>
+                <p style="margin: 1rem 0 0 0; font-size: 0.875rem; color: #7f1d1d;">
+                    Please ensure you have uploaded data and try again.
+                </p>
+            </div>
+        `;
     }
 } 

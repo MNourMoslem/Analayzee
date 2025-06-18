@@ -1,8 +1,18 @@
 // Magical Table functionality
 class MagicalTable {
     constructor() {
-        this.data = parseDjangoJSON('tableData');
-        this.columns = parseDjangoJSON('tableColumns');
+        const tableData = parseDjangoJSON('tableData');
+        const tableColumns = parseDjangoJSON('tableColumns');
+        
+        if (!tableData || !tableColumns) {
+            console.error('Failed to load table data or columns');
+            this.data = [];
+            this.columns = [];
+        } else {
+            this.data = tableData;
+            this.columns = tableColumns;
+        }
+        
         this.currentPage = 1;
         this.rowsPerPage = 25;
         this.sortColumn = null;
@@ -337,10 +347,20 @@ class MagicalTable {
 
 // Helper function to parse escaped JSON from Django
 function parseDjangoJSON(elementId) {
-    const raw = document.getElementById(elementId).textContent.trim();
-    const fixed = raw.replace(/\\u0027/g, '"').replace(/\\u0022/g, '"').replace(/nan/g, '"nan"');
-    const parsed = JSON.parse(fixed);
-    return parsed;
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error(`Element with id '${elementId}' not found`);
+        return null;
+    }
+    
+    try {
+        const raw = element.textContent.trim();
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error(`Error parsing JSON from element '${elementId}':`, error);
+        console.error('Raw content:', element.textContent);
+        return null;
+    }
 }
 
 // Flag to prevent multiple initializations
@@ -348,15 +368,21 @@ let columnCustomizerInitialized = false;
 
 // Initialize magical table
 function initializeMagicalTable() {
-    if (document.getElementById('tableData')) {
-        window.magicalTable = new MagicalTable();
-        // Initialize column customizer after table is ready
-        setTimeout(() => {
-            if (!columnCustomizerInitialized) {
-                initializeColumnCustomizer();
-                columnCustomizerInitialized = true;
-            }
-        }, 100);
+    try {
+        if (document.getElementById('tableData')) {
+            window.magicalTable = new MagicalTable();
+            // Initialize column customizer after table is ready
+            setTimeout(() => {
+                if (!columnCustomizerInitialized) {
+                    initializeColumnCustomizer();
+                    columnCustomizerInitialized = true;
+                }
+            }, 100);
+        } else {
+            console.warn('Table data element not found');
+        }
+    } catch (error) {
+        console.error('Error initializing magical table:', error);
     }
 }
 

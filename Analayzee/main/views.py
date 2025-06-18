@@ -56,27 +56,66 @@ def upload_file_view(request):
 
 def analysis_view(request):
     """Analysis page showing the uploaded file data"""
-    df = get_dataframe_from_store(request)
-    
-    if df is None:
-        messages.warning(request, 'No file data found. Please upload a file first.')
-        return redirect('main:home')
-    
-    # Prepare data for template
-    context = {
-        'title': 'File Analysis - Analayzee',
-        'file_info': {
-            'rows': len(df),
-            'columns': len(df.columns),
+    try:
+        df = get_dataframe_from_store(request)
+        
+        if df is None:
+            messages.warning(request, 'No file data found. Please upload a file first.')
+            return redirect('main:home')
+        
+        # Clean the data for JSON serialization
+        def clean_for_json(obj):
+            if pd.isna(obj):
+                return None
+            elif isinstance(obj, (np.integer, np.floating)):
+                return float(obj) if not np.isnan(obj) else None
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, pd.Timestamp):
+                return obj.isoformat()
+            else:
+                return obj
+        
+        # Clean the DataFrame data
+        cleaned_data = []
+        for _, row in df.head(50).iterrows():
+            cleaned_row = {}
+            for col in df.columns:
+                cleaned_row[col] = clean_for_json(row[col])
+            cleaned_data.append(cleaned_row)
+        
+        # Serialize to JSON with error handling
+        try:
+            table_data_json = json.dumps(cleaned_data)
+            column_names_json = json.dumps(list(df.columns))
+        except Exception as e:
+            print(f"JSON serialization error: {e}")
+            # Fallback to empty data
+            table_data_json = json.dumps([])
+            column_names_json = json.dumps([])
+        
+        # Prepare data for template
+        context = {
+            'title': 'File Analysis - Analayzee',
+            'file_info': {
+                'rows': len(df),
+                'columns': len(df.columns),
+                'column_names': list(df.columns),
+                'data_types': df.dtypes.to_dict(),
+                'missing_values': df.isnull().sum().to_dict(),
+            },
+            'table_data': cleaned_data,  # Use cleaned data
             'column_names': list(df.columns),
-            'data_types': df.dtypes.to_dict(),
-            'missing_values': df.isnull().sum().to_dict(),
-        },
-        'table_data': df.head(50).to_dict('records'),  # First 50 rows
-        'column_names': list(df.columns),
-    }
-    
-    return render(request, 'main/analysis.html', context)
+            'table_data_json': table_data_json,  # Pre-serialized JSON
+            'column_names_json': column_names_json,  # Pre-serialized JSON
+        }
+        
+        return render(request, 'main/analysis.html', context)
+        
+    except Exception as e:
+        print(f"Error in analysis_view: {e}")
+        messages.error(request, f'Error processing data: {str(e)}')
+        return redirect('main:home')
 
 
 def api_file_info(request):

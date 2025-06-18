@@ -1,18 +1,22 @@
 // Charts functionality for Analayzee
 class ChartsManager {
     constructor() {
-        this.data = null;
-        this.columns = [];
+        // Initialize properties
         this.charts = new Map();
         this.currentCharts = [];
-        this.chartMetadata = new Map(); // Store metadata for each chart
+        this.chartMetadata = new Map();
+        this.data = null;
+        this.columns = [];
         this.chartColors = [
             '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
             '#ef4444', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
         ];
         
-        this.initializeEventListeners();
+        // Load data
         this.loadData();
+        
+        // Initialize event listeners
+        this.initializeEventListeners();
     }
     
     initializeEventListeners() {
@@ -99,27 +103,29 @@ class ChartsManager {
     
     loadDataFromTemplate() {
         try {
-            this.data = parseDjangoJSON('tableData');
-            this.columns = parseDjangoJSON('tableColumns');
-            this.numericColumns = [];
-            this.categoricalColumns = [];
+            const tableData = parseDjangoJSON('tableData');
+            const tableColumns = parseDjangoJSON('tableColumns');
             
-            // Determine column types from data
-            if (this.data && this.data.length > 0) {
-                this.columns.forEach(column => {
-                    if (this.isNumericColumn(column)) {
-                        this.numericColumns.push(column);
-                    } else {
-                        this.categoricalColumns.push(column);
-                    }
-                });
+            if (!tableData || !tableColumns) {
+                console.error('Failed to load data from template');
+                this.showError('Failed to load data from template');
+                return;
             }
             
+            this.data = tableData;
+            this.columns = tableColumns;
+            
+            console.log('Loaded data from template:', {
+                rows: this.data.length,
+                columns: this.columns.length,
+                sampleData: this.data.slice(0, 2)
+            });
+            
             this.populateSelectors();
-            this.updateChartOptions();
+            
         } catch (error) {
-            console.error('Error loading chart data from template:', error);
-            this.showError('Failed to load data for charts');
+            console.error('Error loading data from template:', error);
+            this.showError('Error loading data from template');
         }
     }
     
@@ -709,10 +715,20 @@ class ChartsManager {
 
 // Helper function to parse escaped JSON from Django
 function parseDjangoJSON(elementId) {
-    const raw = document.getElementById(elementId).textContent.trim();
-    const fixed = raw.replace(/\\u0027/g, '"').replace(/\\u0022/g, '"').replace(/nan/g, '"nan"');
-    const parsed = JSON.parse(fixed);
-    return parsed;
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error(`Element with id '${elementId}' not found`);
+        return null;
+    }
+    
+    try {
+        const raw = element.textContent.trim();
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error(`Error parsing JSON from element '${elementId}':`, error);
+        console.error('Raw content:', element.textContent);
+        return null;
+    }
 }
 
 // Initialize charts when tab is clicked

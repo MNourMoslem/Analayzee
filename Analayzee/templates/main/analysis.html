@@ -15,8 +15,8 @@
 
 {% block content %}
 <!-- Hidden data elements for JavaScript -->
-<script id="tableData" type="application/json">{{ table_data|escapejs }}</script>
-<script id="tableColumns" type="application/json">{{ column_names|escapejs }}</script>
+<script id="tableData" type="application/json">{{ table_data_json|safe }}</script>
+<script id="tableColumns" type="application/json">{{ column_names_json|safe }}</script>
 {% csrf_token %}
 
 <!-- Top Navigation Bar -->
