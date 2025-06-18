@@ -1,14 +1,25 @@
 // Data Cleaning Premium Functionality
 class DataCleaningManager {
     constructor() {
-        this.data = null;
+        this.data = [];
         this.columns = [];
         this.cleaningHistory = [];
         this.currentOperation = null;
         this.operationConfig = {};
         
-        this.initializeEventListeners();
+        console.log('DataCleaningManager initialized'); // Debug
+        
         this.loadData();
+        this.initializeEventListeners();
+        
+        // Debug: Check if data was loaded
+        setTimeout(() => {
+            console.log('DataCleaningManager data check:', {
+                dataLength: this.data.length,
+                columnsLength: this.columns.length,
+                sampleData: this.data.slice(0, 2)
+            });
+        }, 1000);
     }
     
     initializeEventListeners() {
@@ -744,40 +755,43 @@ class DataCleaningManager {
     getOperationConfig() {
         const config = {};
         
+        console.log('Getting config for operation:', this.currentOperation); // Debug
+        
         switch (this.currentOperation) {
             case 'missing-values':
-                config.action = document.getElementById('missingAction')?.value;
-                config.custom_value = document.getElementById('customValue')?.value;
+                config.action = document.getElementById('missingAction')?.value || 'fill-mean';
+                config.custom_value = document.getElementById('customValue')?.value || '';
                 break;
             case 'outliers':
-                config.method = document.getElementById('outlierMethod')?.value;
-                config.action = document.getElementById('outlierAction')?.value;
+                config.method = document.getElementById('outlierMethod')?.value || 'iqr';
+                config.action = document.getElementById('outlierAction')?.value || 'cap';
                 config.threshold = parseFloat(document.getElementById('outlierThreshold')?.value || 1.5);
                 break;
             case 'data-type':
-                config.target_type = document.getElementById('targetType')?.value;
-                config.method = document.getElementById('conversionMethod')?.value;
+                config.target_type = document.getElementById('targetType')?.value || 'string';
+                config.method = document.getElementById('conversionMethod')?.value || 'coerce';
                 break;
             case 'text-cleaning':
-                config.lowercase = document.getElementById('lowercase')?.checked;
-                config.remove_special = document.getElementById('removeSpecial')?.checked;
-                config.remove_numbers = document.getElementById('removeNumbers')?.checked;
-                config.trim_whitespace = document.getElementById('trimWhitespace')?.checked;
-                config.remove_duplicates = document.getElementById('removeDuplicates')?.checked;
-                config.custom_replacements = document.getElementById('customReplacements')?.value;
+                config.lowercase = document.getElementById('lowercase')?.checked || false;
+                config.remove_special = document.getElementById('removeSpecial')?.checked || false;
+                config.remove_numbers = document.getElementById('removeNumbers')?.checked || false;
+                config.trim_whitespace = document.getElementById('trimWhitespace')?.checked || true;
+                config.remove_duplicates = document.getElementById('removeDuplicates')?.checked || false;
+                config.custom_replacements = document.getElementById('customReplacements')?.value || '';
                 break;
             case 'duplicates':
-                config.scope = document.getElementById('duplicateScope')?.value;
-                config.action = document.getElementById('duplicateAction')?.value;
-                config.keep = document.getElementById('keepOption')?.value;
+                config.scope = document.getElementById('duplicateScope')?.value || 'all';
+                config.action = document.getElementById('duplicateAction')?.value || 'remove';
+                config.keep = document.getElementById('keepOption')?.value || 'first';
                 break;
             case 'normalize':
-                config.method = document.getElementById('normalizeMethod')?.value;
+                config.method = document.getElementById('normalizeMethod')?.value || 'minmax';
                 config.range_min = parseFloat(document.getElementById('rangeMin')?.value || 0);
                 config.range_max = parseFloat(document.getElementById('rangeMax')?.value || 1);
                 break;
         }
         
+        console.log('Generated config:', config); // Debug
         return config;
     }
     
@@ -888,15 +902,25 @@ class DataCleaningManager {
             return;
         }
         
+        // Set current operation for preview
+        this.currentOperation = operation;
+        
         this.showLoading();
         
         try {
+            // Ensure operation config elements are created
+            this.showOperationConfig(operation);
+            
             const config = this.getOperationConfig();
+            console.log('Preview config:', config); // Debug
+            
             const previewData = this.generatePreviewData(column, operation, config);
+            console.log('Preview data:', previewData); // Debug
+            
             this.showPreviewComparison(previewData, column);
         } catch (error) {
             console.error('Error generating preview:', error);
-            this.showError('Error generating preview');
+            this.showError('Error generating preview: ' + error.message);
         }
         
         this.hideLoading();
@@ -1316,6 +1340,8 @@ class DataCleaningManager {
         
         const { before, after, changes } = previewData;
         
+        console.log('Showing preview comparison:', { before, after, changes }); // Debug
+        
         let comparisonHTML = `
             <h3>Preview: ${this.getOperationDescription(this.currentOperation, this.getOperationConfig())}</h3>
             <div class="preview-summary">
@@ -1391,11 +1417,8 @@ class DataCleaningManager {
             </div>
             
             <div class="preview-actions">
-                <button class="btn btn-primary" onclick="window.dataCleaningManager.applyCleaning()">
-                    Apply Changes
-                </button>
                 <button class="btn btn-secondary" onclick="window.dataCleaningManager.clearPreview()">
-                    Cancel
+                    Close Preview
                 </button>
             </div>
         `;
@@ -1464,6 +1487,76 @@ class DataCleaningManager {
             }, 5000);
         }
     }
+    
+    // Test method to verify operations are working
+    testOperation(operation, column) {
+        console.log('Testing operation:', operation, 'on column:', column);
+        
+        if (!this.data || this.data.length === 0) {
+            console.error('No data available for testing');
+            return;
+        }
+        
+        const testConfig = this.getDefaultConfig(operation);
+        console.log('Test config:', testConfig);
+        
+        const testData = JSON.parse(JSON.stringify(this.data.slice(0, 5)));
+        console.log('Test data before:', testData);
+        
+        let result;
+        switch (operation) {
+            case 'missing-values':
+                result = this.previewMissingValues(testData, column, testConfig);
+                break;
+            case 'outliers':
+                result = this.previewOutliers(testData, column, testConfig);
+                break;
+            case 'data-type':
+                result = this.previewDataType(testData, column, testConfig);
+                break;
+            case 'text-cleaning':
+                result = this.previewTextCleaning(testData, column, testConfig);
+                break;
+            case 'duplicates':
+                result = this.previewDuplicates(testData, column, testConfig);
+                break;
+            case 'normalize':
+                result = this.previewNormalize(testData, column, testConfig);
+                break;
+            default:
+                console.error('Unknown operation:', operation);
+                return;
+        }
+        
+        console.log('Test result:', result);
+        return result;
+    }
+    
+    getDefaultConfig(operation) {
+        switch (operation) {
+            case 'missing-values':
+                return { action: 'fill-mean' };
+            case 'outliers':
+                return { method: 'iqr', action: 'cap', threshold: 1.5 };
+            case 'data-type':
+                return { target_type: 'string', method: 'coerce' };
+            case 'text-cleaning':
+                return { 
+                    lowercase: true, 
+                    remove_special: false, 
+                    remove_numbers: false, 
+                    trim_whitespace: true, 
+                    remove_duplicates: false, 
+                    custom_replacements: '' 
+                };
+            case 'duplicates':
+                return { scope: 'all', action: 'remove', keep: 'first' };
+            case 'normalize':
+                return { method: 'minmax', range_min: 0, range_max: 1 };
+            default:
+                return {};
+        }
+    }
 }
 
 // Initialize data cleaning when tab is clicked
@@ -1487,4 +1580,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dataCleaningTab && dataCleaningContent && dataCleaningContent.classList.contains('active')) {
         window.dataCleaningManager = new DataCleaningManager();
     }
-}); 
+});
+
+// Global test function for debugging
+window.testDataCleaning = function(operation, column) {
+    if (window.dataCleaningManager) {
+        return window.dataCleaningManager.testOperation(operation, column);
+    } else {
+        console.error('DataCleaningManager not initialized');
+        return null;
+    }
+};
+
+// Global function to check data cleaning status
+window.checkDataCleaningStatus = function() {
+    if (window.dataCleaningManager) {
+        console.log('DataCleaningManager Status:', {
+            dataLength: window.dataCleaningManager.data.length,
+            columns: window.dataCleaningManager.columns,
+            currentOperation: window.dataCleaningManager.currentOperation,
+            historyLength: window.dataCleaningManager.cleaningHistory.length
+        });
+        return window.dataCleaningManager;
+    } else {
+        console.error('DataCleaningManager not initialized');
+        return null;
+    }
+}; 

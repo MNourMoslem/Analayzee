@@ -5,38 +5,6 @@
     margin: 0 auto;
 }
 
-.cleaning-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.cleaning-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #000000;
-    margin-bottom: 0.5rem;
-    position: relative;
-}
-
-.cleaning-title::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background: #000000;
-    border-radius: 2px;
-}
-
-.cleaning-subtitle {
-    font-size: 1.1rem;
-    color: #666666;
-    margin-bottom: 0;
-    font-weight: 400;
-}
-
 .cleaning-controls {
     background: #ffffff;
     border-radius: 12px;
@@ -44,10 +12,15 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
     border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: flex-end;
+    gap: 2rem;
+    flex-wrap: wrap;
 }
 
 .cleaning-control-group {
-    margin-bottom: 1.5rem;
+    flex: 1;
+    min-width: 200px;
 }
 
 .cleaning-control-group label {
@@ -85,7 +58,7 @@
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-top: 1.5rem;
+    align-items: flex-end;
 }
 
 .cleaning-actions .btn {
@@ -101,6 +74,7 @@
     gap: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .cleaning-actions .btn-primary {
