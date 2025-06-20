@@ -1,0 +1,146 @@
+@startuml Analayzee_Component_Diagram
+
+!theme plain
+skinparam componentFontSize 12
+skinparam componentFontStyle bold
+skinparam interfaceFontSize 10
+
+package "Analayzee System" {
+    
+    package "Web Interface Layer" {
+        [Home Page] as HP
+        [Analysis Page] as AP
+        [User Dashboard] as UD
+        [Authentication Pages] as AUTH
+        [Component Showcase] as CS
+    }
+    
+    package "Presentation Layer" {
+        [Template Engine] as TE
+        [Static Files] as SF
+        [JavaScript Components] as JS
+        [CSS Framework] as CSS
+    }
+    
+    package "Application Layer" {
+        [URL Router] as UR
+        [View Controllers] as VC
+        [Form Handlers] as FH
+        [Session Manager] as SM
+        [Authentication Middleware] as AM
+    }
+    
+    package "Business Logic Layer" {
+        [File Processor] as FP
+        [Data Analyzer] as DA
+        [Chart Generator] as CG
+        [Statistics Calculator] as SC
+        [Data Table Manager] as DTM
+        [Data Cleaning Engine] as DCE
+        [User Manager] as UM
+        [Subscription Manager] as SUB
+    }
+    
+    package "Data Access Layer" {
+        [Django ORM] as ORM
+        [Session Storage] as SS
+        [File Storage] as FS
+        [Cache Manager] as CM
+    }
+    
+    package "External Services" {
+        [Pandas Library] as PD
+        [NumPy Library] as NP
+        [Chart.js Library] as CJ
+        [File Validation] as FV
+    }
+    
+    package "Database Layer" {
+        [SQLite Database] as DB
+        [User Tables] as UT
+        [Subscription Tables] as ST
+        [Session Tables] as SEST
+    }
+}
+
+' Web Interface Layer connections
+HP --> TE : uses
+AP --> TE : uses
+UD --> TE : uses
+AUTH --> TE : uses
+CS --> TE : uses
+
+' Presentation Layer connections
+TE --> SF : serves
+TE --> JS : includes
+TE --> CSS : includes
+
+' Application Layer connections
+UR --> VC : routes_to
+VC --> FH : uses
+VC --> SM : uses
+VC --> AM : uses
+
+' Business Logic Layer connections
+FP --> PD : uses
+FP --> NP : uses
+FP --> FV : uses
+
+DA --> PD : uses
+DA --> NP : uses
+DA --> SS : reads_from
+
+CG --> CJ : uses
+CG --> SS : reads_from
+
+SC --> PD : uses
+SC --> NP : uses
+SC --> SS : reads_from
+
+DTM --> SS : reads_from
+DTM --> FS : writes_to
+
+DCE --> PD : uses
+DCE --> SS : reads_from
+DCE --> SS : writes_to
+
+UM --> ORM : uses
+SUB --> ORM : uses
+
+' Data Access Layer connections
+ORM --> DB : connects_to
+SS --> DB : stores_in
+FS --> DB : stores_in
+CM --> DB : caches_from
+
+' Database Layer connections
+DB --> UT : contains
+DB --> ST : contains
+DB --> SEST : contains
+
+' External interfaces
+interface "File Upload API" as FUA
+interface "Data Analysis API" as DAA
+interface "Chart Generation API" as CGA
+interface "Statistics API" as STA
+interface "User Management API" as UMA
+interface "Subscription API" as SUBA
+
+FP .. FUA : provides
+DA .. DAA : provides
+CG .. CGA : provides
+SC .. STA : provides
+UM .. UMA : provides
+SUB .. SUBA : provides
+
+' Component dependencies
+HP --> FP : depends_on
+AP --> DA : depends_on
+AP --> CG : depends_on
+AP --> SC : depends_on
+AP --> DTM : depends_on
+AP --> DCE : depends_on
+UD --> UM : depends_on
+UD --> SUB : depends_on
+
+@enduml 

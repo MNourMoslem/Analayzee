@@ -1,0 +1,54 @@
+@startuml Analayzee_Activity_Diagram_Simplified
+
+!theme plain
+skinparam activityFontSize 12
+skinparam activityFontStyle bold
+skinparam activityDiamondFontSize 10
+
+start
+
+:User accesses Analayzee;
+
+if (User authenticated?) then (yes)
+    :Load user profile;
+else (no)
+    :Show guest interface;
+endif
+
+:User uploads file;
+
+:Validate file format and size;
+if (File valid?) then (yes)
+    :Process file data;
+    :Store in session;
+    :Redirect to analysis page;
+    
+    :Load analysis interface;
+    
+    fork
+        :Display data table;
+        :Enable basic operations;
+    fork again
+        :Initialize analysis tools;
+    end fork
+    
+    :User performs analysis;
+    
+    while (User continues?) is (yes)
+        :Process user requests;
+        :Update interface;
+    endwhile (no)
+    
+    :User exports results;
+    
+else (no)
+    :Show error message;
+    :Return to upload page;
+endif
+
+:User logs out;
+:Clear session;
+
+stop
+
+@enduml 

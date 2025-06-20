@@ -1,0 +1,252 @@
+@startuml Analayzee_Class_Diagram
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classFontStyle bold
+skinparam packageStyle rectangle
+
+package "Django Framework" {
+    class AbstractUser {
+        +username: CharField
+        +first_name: CharField
+        +last_name: CharField
+        +email: EmailField
+        +password: CharField
+        +is_active: BooleanField
+        +is_staff: BooleanField
+        +is_superuser: BooleanField
+        +date_joined: DateTimeField
+        +last_login: DateTimeField
+        +check_password(raw_password)
+        +set_password(raw_password)
+        +save()
+    }
+}
+
+package "Accounts App" {
+    class SubscriptionType {
+        +name: CharField
+        +display_name: CharField
+        +description: TextField
+        +price: DecimalField
+        +duration_days: IntegerField
+        +max_file_size_mb: IntegerField
+        +max_files_per_month: IntegerField
+        +features: JSONField
+        +is_active: BooleanField
+        +created_at: DateTimeField
+        +updated_at: DateTimeField
+        +__str__()
+    }
+
+    class User {
+        +email: EmailField
+        +subscription_type: ForeignKey
+        +subscription_start_date: DateTimeField
+        +subscription_end_date: DateTimeField
+        +is_subscription_active: BooleanField
+        +files_uploaded_this_month: IntegerField
+        +last_file_upload_reset: DateTimeField
+        +created_at: DateTimeField
+        +updated_at: DateTimeField
+        +is_free_user: Property
+        +is_premium_user: Property
+        +subscription_status: Property
+        +days_until_expiry: Property
+        +can_upload_file(file_size_mb)
+        +increment_file_count()
+        +activate_subscription(subscription_type, duration_days)
+        +deactivate_subscription()
+        +get_feature_access(feature_name)
+        +clean()
+        +save()
+    }
+
+    class SubscriptionHistory {
+        +user: ForeignKey
+        +subscription_type: ForeignKey
+        +action: CharField
+        +start_date: DateTimeField
+        +end_date: DateTimeField
+        +amount_paid: DecimalField
+        +created_at: DateTimeField
+        +__str__()
+    }
+
+    class UserSession {
+        +user: ForeignKey
+        +session_id: UUIDField
+        +ip_address: GenericIPAddressField
+        +user_agent: TextField
+        +login_time: DateTimeField
+        +logout_time: DateTimeField
+        +is_active: BooleanField
+        +__str__()
+    }
+
+    class CustomUserCreationForm {
+        +email: EmailField
+        +username: CharField
+        +password1: CharField
+        +password2: CharField
+        +first_name: CharField
+        +last_name: CharField
+        +agree_to_terms: BooleanField
+        +clean_email()
+        +clean_username()
+        +save(commit)
+    }
+
+    class CustomAuthenticationForm {
+        +username: EmailField
+        +password: CharField
+        +remember_me: BooleanField
+        +clean_username()
+    }
+
+    class ProfileUpdateForm {
+        +first_name: CharField
+        +last_name: CharField
+        +email: EmailField
+        +clean_email()
+    }
+
+    class ChangePasswordForm {
+        +current_password: CharField
+        +new_password1: CharField
+        +new_password2: CharField
+        +clean_current_password()
+        +clean_new_password2()
+        +save(commit)
+    }
+
+    class PasswordResetForm {
+        +email: EmailField
+        +clean_email()
+    }
+}
+
+package "Main App" {
+    class DataAnalyzer {
+        +df: DataFrame
+        +apply_cleaning_operation(df, column, operation, params)
+        +handle_missing_values(df, column, params)
+        +handle_outliers(df, column, params)
+        +convert_data_type(df, column, params)
+        +clean_text(df, column, params)
+        +remove_duplicates(df, params)
+        +normalize_data(df, column, params)
+    }
+
+    class ChartGenerator {
+        +create_bar_chart(data, x_axis, y_axis)
+        +create_line_chart(data, x_axis, y_axis)
+        +create_pie_chart(data, labels, values)
+        +create_scatter_plot(data, x_axis, y_axis)
+        +create_histogram(data, column, bins)
+        +export_chart_as_png(chart)
+    }
+
+    class StatisticsCalculator {
+        +calculate_descriptive_stats(data, column)
+        +calculate_correlation_matrix(data)
+        +detect_outliers(data, column)
+        +analyze_distribution(data, column)
+        +generate_insights(data)
+        +export_statistics_report(stats)
+    }
+
+    class DataTableManager {
+        +sort_data(data, column, direction)
+        +filter_data(data, search_term)
+        +paginate_data(data, page, per_page)
+        +customize_columns(data, visible_columns)
+        +export_data(data, format)
+    }
+}
+
+package "Utils" {
+    class DataFrameStore {
+        +STORE_SESSION_KEY: str
+        +set_dataframe_in_store(request, df)
+        +get_dataframe_from_store(request)
+        +clear_dataframe_store(request)
+    }
+
+    class FileProcessor {
+        +allowed_extensions: list
+        +validate_file_type(file)
+        +read_csv_file(file)
+        +read_excel_file(file)
+        +process_file(file)
+    }
+}
+
+package "Views" {
+    class HomeView {
+        +home_view(request)
+    }
+
+    class AnalysisView {
+        +analysis_view(request)
+        +api_file_info(request)
+        +api_charts_data(request)
+    }
+
+    class FileUploadView {
+        +upload_file_view(request)
+    }
+
+    class DataCleaningView {
+        +apply_cleaning_view(request)
+    }
+
+    class UserAuthView {
+        +signup_view(request)
+        +login_view(request)
+        +logout_view(request)
+        +profile_view(request)
+        +change_password_view(request)
+        +subscription_view(request)
+    }
+
+    class SubscriptionView {
+        +check_subscription_status(request)
+        +subscription_required(feature_name)
+    }
+}
+
+' Relationships
+AbstractUser <|-- User
+User ||--o{ SubscriptionHistory : has
+User ||--o{ UserSession : creates
+User }o--|| SubscriptionType : subscribes_to
+
+CustomUserCreationForm --> User : creates
+CustomAuthenticationForm --> User : authenticates
+ProfileUpdateForm --> User : updates
+ChangePasswordForm --> User : changes_password
+
+DataAnalyzer --> DataFrameStore : uses
+ChartGenerator --> DataFrameStore : uses
+StatisticsCalculator --> DataFrameStore : uses
+DataTableManager --> DataFrameStore : uses
+
+FileProcessor --> DataFrameStore : populates
+
+HomeView --> FileProcessor : uses
+AnalysisView --> DataAnalyzer : uses
+AnalysisView --> ChartGenerator : uses
+AnalysisView --> StatisticsCalculator : uses
+AnalysisView --> DataTableManager : uses
+FileUploadView --> FileProcessor : uses
+DataCleaningView --> DataAnalyzer : uses
+
+UserAuthView --> CustomUserCreationForm : uses
+UserAuthView --> CustomAuthenticationForm : uses
+UserAuthView --> ProfileUpdateForm : uses
+UserAuthView --> ChangePasswordForm : uses
+SubscriptionView --> User : manages
+
+@enduml 

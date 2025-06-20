@@ -1,0 +1,72 @@
+@startuml Analayzee_Use_Case_Diagram_Simplified
+
+!theme plain
+skinparam usecaseFontSize 12
+skinparam usecaseFontStyle bold
+skinparam actorFontSize 12
+skinparam actorFontStyle bold
+
+left to right direction
+
+actor "Guest User" as GU
+actor "Registered User" as RU
+actor "Premium User" as PU
+
+rectangle "Analayzee System" {
+    
+    package "User Management" {
+        usecase "Register Account" as UC1
+        usecase "Login/Logout" as UC2
+        usecase "Manage Profile" as UC3
+        usecase "View Subscription" as UC4
+    }
+    
+    package "File Management" {
+        usecase "Upload Data File" as UC5
+        usecase "Validate File" as UC6
+    }
+    
+    package "Data Analysis" {
+        usecase "View Data Table" as UC7
+        usecase "Analyze Columns" as UC8
+        usecase "Create Charts" as UC9
+        usecase "Generate Statistics" as UC10
+        usecase "Export Results" as UC11
+    }
+    
+    package "Advanced Features" {
+        usecase "Clean Data" as UC12
+        usecase "Bulk Processing" as UC13
+    }
+}
+
+' Guest User relationships
+GU --> UC1
+GU --> UC2
+GU --> UC5
+GU --> UC6
+
+' Registered User relationships (includes all Guest features)
+RU --> UC3
+RU --> UC4
+RU --> UC7
+RU --> UC8
+RU --> UC9
+RU --> UC10
+RU --> UC11
+
+' Premium User relationships (includes all Registered features)
+PU --> UC12
+PU --> UC13
+
+' Include relationships
+UC5 ..> UC6 : <<include>>
+UC7 ..> UC11 : <<include>>
+UC8 ..> UC11 : <<include>>
+UC9 ..> UC11 : <<include>>
+UC10 ..> UC11 : <<include>>
+
+' Extend relationships
+UC12 ..> UC8 : <<extend>>
+
+@enduml 

@@ -1,0 +1,121 @@
+@startuml Analayzee_State_Diagram
+
+!theme plain
+skinparam stateFontSize 12
+skinparam stateFontStyle bold
+
+[*] --> GuestState
+
+state GuestState {
+    [*] --> Browsing
+    Browsing --> FileUpload : upload_file()
+    FileUpload --> FileValidation : validate_file()
+    
+    state FileValidation {
+        [*] --> CheckingFormat
+        CheckingFormat --> FormatValid : format_ok()
+        CheckingFormat --> FormatInvalid : format_error()
+        FormatInvalid --> [*] : show_error()
+        
+        FormatValid --> CheckingSize : check_size()
+        CheckingSize --> SizeValid : size_ok()
+        CheckingSize --> SizeInvalid : size_error()
+        SizeInvalid --> [*] : show_error()
+        
+        SizeValid --> ProcessingFile : process()
+    }
+    
+    ProcessingFile --> AnalysisReady : file_processed()
+    AnalysisReady --> [*] : redirect_to_analysis()
+}
+
+GuestState --> AuthenticatedState : login()
+
+state AuthenticatedState {
+    [*] --> UserDashboard
+    
+    UserDashboard --> ProfileManagement : manage_profile()
+    UserDashboard --> SubscriptionManagement : manage_subscription()
+    UserDashboard --> FileUpload : upload_file()
+    
+    ProfileManagement --> UserDashboard : profile_updated()
+    SubscriptionManagement --> UserDashboard : subscription_updated()
+    
+    FileUpload --> FileValidation : validate_file()
+    
+    state FileValidation {
+        [*] --> CheckingFormat
+        CheckingFormat --> FormatValid : format_ok()
+        CheckingFormat --> FormatInvalid : format_error()
+        FormatInvalid --> [*] : show_error()
+        
+        FormatValid --> CheckingSize : check_size()
+        CheckingSize --> SizeValid : size_ok()
+        CheckingSize --> SizeInvalid : size_error()
+        SizeInvalid --> [*] : show_error()
+        
+        SizeValid --> ProcessingFile : process()
+    }
+    
+    ProcessingFile --> AnalysisReady : file_processed()
+    AnalysisReady --> DataAnalysis : start_analysis()
+    
+    state DataAnalysis {
+        [*] --> TableView
+        
+        TableView --> ColumnAnalysis : analyze_column()
+        TableView --> ChartCreation : create_chart()
+        TableView --> StatisticsAnalysis : generate_stats()
+        TableView --> DataCleaning : clean_data()
+        
+        ColumnAnalysis --> TableView : analysis_complete()
+        ChartCreation --> TableView : chart_created()
+        StatisticsAnalysis --> TableView : stats_generated()
+        
+        state DataCleaning {
+            [*] --> CheckingAccess
+            CheckingAccess --> AccessGranted : premium_user()
+            CheckingAccess --> AccessDenied : free_user()
+            
+            AccessDenied --> [*] : show_upgrade_prompt()
+            
+            AccessGranted --> CleaningOperations : perform_cleaning()
+            
+            state CleaningOperations {
+                [*] --> MissingValues
+                MissingValues --> Outliers : handle_missing()
+                Outliers --> DataTypes : handle_outliers()
+                DataTypes --> TextCleaning : convert_types()
+                TextCleaning --> Duplicates : clean_text()
+                Duplicates --> Normalization : remove_duplicates()
+                Normalization --> [*] : normalize_data()
+            }
+            
+            CleaningOperations --> [*] : cleaning_complete()
+        }
+        
+        DataCleaning --> TableView : cleaning_complete()
+    }
+    
+    DataAnalysis --> ExportResults : export_data()
+    ExportResults --> UserDashboard : export_complete()
+    
+    UserDashboard --> GuestState : logout()
+}
+
+state "Error States" as ErrorStates {
+    [*] --> FileError
+    [*] --> ProcessingError
+    [*] --> AnalysisError
+    
+    FileError --> GuestState : retry()
+    ProcessingError --> GuestState : retry()
+    AnalysisError --> AuthenticatedState : retry()
+}
+
+' Transitions to error states
+FileValidation --> ErrorStates : validation_failed()
+ProcessingFile --> ErrorStates : processing_failed()
+DataAnalysis --> ErrorStates : analysis_failed()
+
+@enduml 

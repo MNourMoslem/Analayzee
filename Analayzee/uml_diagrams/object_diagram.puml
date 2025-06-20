@@ -1,0 +1,160 @@
+@startuml Analayzee_Object_Diagram
+
+!theme plain
+skinparam objectFontSize 12
+skinparam objectFontStyle bold
+skinparam packageStyle rectangle
+
+package "Subscription Types" {
+    object freePlan {
+        name = "free"
+        display_name = "Free Plan"
+        description = "Basic features for casual users"
+        price = 0.00
+        duration_days = 0
+        max_file_size_mb = 10
+        max_files_per_month = 5
+        features = {"basic_analysis": true, "csv_upload": true, "excel_upload": true}
+        is_active = true
+    }
+
+    object premiumPlan {
+        name = "premium"
+        display_name = "Premium Plan"
+        description = "Advanced features for power users"
+        price = 29.99
+        duration_days = 30
+        max_file_size_mb = 100
+        max_files_per_month = 50
+        features = {"advanced_analysis": true, "bulk_processing": true, "api_access": true}
+        is_active = true
+    }
+}
+
+package "Users" {
+    object johnDoe {
+        username = "john_doe"
+        email = "john@example.com"
+        first_name = "John"
+        last_name = "Doe"
+        is_active = true
+        subscription_type = premiumPlan
+        subscription_start_date = "2024-01-15"
+        subscription_end_date = "2024-02-15"
+        is_subscription_active = true
+        files_uploaded_this_month = 12
+    }
+
+    object janeSmith {
+        username = "jane_smith"
+        email = "jane@example.com"
+        first_name = "Jane"
+        last_name = "Smith"
+        is_active = true
+        subscription_type = freePlan
+        subscription_start_date = null
+        subscription_end_date = null
+        is_subscription_active = false
+        files_uploaded_this_month = 3
+    }
+}
+
+package "Subscription History" {
+    object johnHistory1 {
+        user = johnDoe
+        subscription_type = premiumPlan
+        action = "activated"
+        start_date = "2024-01-15"
+        end_date = "2024-02-15"
+        amount_paid = 29.99
+    }
+
+    object johnHistory2 {
+        user = johnDoe
+        subscription_type = freePlan
+        action = "upgraded"
+        start_date = "2024-01-01"
+        end_date = "2024-01-15"
+        amount_paid = 0.00
+    }
+}
+
+package "User Sessions" {
+    object johnSession1 {
+        user = johnDoe
+        session_id = "550e8400-e29b-41d4-a716-446655440000"
+        ip_address = "192.168.1.100"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        login_time = "2024-01-20 10:30:00"
+        logout_time = null
+        is_active = true
+    }
+
+    object janeSession1 {
+        user = janeSmith
+        session_id = "550e8400-e29b-41d4-a716-446655440001"
+        ip_address = "192.168.1.101"
+        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+        login_time = "2024-01-20 11:00:00"
+        logout_time = "2024-01-20 12:30:00"
+        is_active = false
+    }
+}
+
+package "Data Analysis Objects" {
+    object salesData {
+        columns = "Date, Product, Sales, Revenue"
+        rows = 1000
+        data_types = "Date: datetime64, Product: object, Sales: int64, Revenue: float64"
+    }
+
+    object dataAnalyzer {
+        df = salesData
+    }
+
+    object chartGenerator {
+        current_chart_type = "bar"
+        chart_data = salesData
+    }
+
+    object statsCalculator {
+        analysis_results = "mean: 150.5, std: 45.2, correlation: 0.85"
+    }
+}
+
+package "Form Objects" {
+    object signupForm {
+        email = "newuser@example.com"
+        username = "newuser"
+        password1 = "securepass123"
+        password2 = "securepass123"
+        first_name = "New"
+        last_name = "User"
+        agree_to_terms = true
+    }
+
+    object loginForm {
+        username = "john@example.com"
+        password = "johnpass123"
+        remember_me = true
+    }
+}
+
+' Relationships
+johnDoe --> premiumPlan : subscribes_to
+janeSmith --> freePlan : subscribes_to
+
+johnDoe --> johnHistory1 : has
+johnDoe --> johnHistory2 : has
+johnDoe --> johnSession1 : creates
+
+janeSmith --> janeSession1 : creates
+
+dataAnalyzer --> salesData : analyzes
+chartGenerator --> salesData : visualizes
+statsCalculator --> salesData : calculates
+
+signupForm --> janeSmith : creates
+loginForm --> johnDoe : authenticates
+
+@enduml 

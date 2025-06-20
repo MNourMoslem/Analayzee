@@ -1,0 +1,128 @@
+@startuml Analayzee_Sequence_Diagram
+
+!theme plain
+skinparam sequenceFontSize 12
+skinparam sequenceFontStyle bold
+
+actor User as U
+participant "HomeView" as HV
+participant "FileProcessor" as FP
+participant "DataFrameStore" as DFS
+participant "AnalysisView" as AV
+participant "DataAnalyzer" as DA
+participant "ChartGenerator" as CG
+participant "StatisticsCalculator" as SC
+participant "DataTableManager" as DTM
+participant "User" as UserModel
+participant "SubscriptionType" as ST
+
+== File Upload Process ==
+
+U -> HV: Access home page
+HV -> U: Display file upload form
+
+U -> HV: Upload CSV/Excel file
+HV -> FP: process_file(file)
+FP -> FP: validate_file_type(file)
+FP -> FP: read_file_data(file)
+
+alt File is CSV
+    FP -> FP: read_csv_file(file)
+else File is Excel
+    FP -> FP: read_excel_file(file)
+end
+
+FP -> DFS: set_dataframe_in_store(request, df)
+DFS -> DFS: encode_dataframe(df)
+DFS -> DFS: store_in_session(request)
+
+HV -> U: Redirect to analysis page
+
+== Analysis Page Loading ==
+
+U -> AV: Access analysis page
+AV -> DFS: get_dataframe_from_store(request)
+DFS -> DFS: decode_dataframe(session_data)
+DFS -> AV: return DataFrame
+
+AV -> UserModel: check_subscription_status()
+UserModel -> ST: get_subscription_features()
+ST -> UserModel: return features
+UserModel -> AV: return subscription_info
+
+AV -> U: Display analysis interface with data
+
+== Data Analysis Process ==
+
+U -> AV: Request column analysis
+AV -> DA: analyze_column(df, column)
+DA -> DA: calculate_statistics(column)
+DA -> DA: detect_data_type(column)
+DA -> DA: find_outliers(column)
+DA -> AV: return analysis_results
+AV -> U: Display column analysis
+
+== Chart Creation Process ==
+
+U -> AV: Request chart creation
+AV -> CG: create_chart(data, chart_type, x_axis, y_axis)
+CG -> CG: validate_chart_parameters()
+CG -> CG: process_data_for_chart()
+CG -> CG: generate_chart_config()
+CG -> AV: return chart_data
+AV -> U: Display interactive chart
+
+== Statistics Generation ==
+
+U -> AV: Request statistical analysis
+AV -> SC: calculate_statistics(df, analysis_type)
+SC -> SC: compute_descriptive_stats()
+SC -> SC: calculate_correlations()
+SC -> SC: detect_outliers()
+SC -> SC: analyze_distributions()
+SC -> AV: return statistics_results
+AV -> U: Display statistical report
+
+== Data Table Operations ==
+
+U -> AV: Request table operations
+AV -> DTM: handle_table_operation(operation, params)
+
+alt Sort operation
+    DTM -> DTM: sort_data(data, column, direction)
+else Filter operation
+    DTM -> DTM: filter_data(data, search_term)
+else Paginate operation
+    DTM -> DTM: paginate_data(data, page, per_page)
+else Export operation
+    DTM -> DTM: export_data(data, format)
+end
+
+DTM -> AV: return processed_data
+AV -> U: Update table display
+
+== Data Cleaning Process (Premium) ==
+
+U -> AV: Request data cleaning
+AV -> UserModel: check_feature_access("data_cleaning")
+UserModel -> AV: return access_status
+
+alt Premium user
+    AV -> DA: apply_cleaning_operation(df, column, operation, params)
+    DA -> DA: validate_cleaning_params()
+    DA -> DA: execute_cleaning_operation()
+    DA -> DFS: update_dataframe_in_store(request, cleaned_df)
+    DA -> AV: return cleaning_results
+    AV -> U: Display cleaned data
+else Free user
+    AV -> U: Show premium upgrade prompt
+end
+
+== Session Management ==
+
+U -> AV: Logout
+AV -> DFS: clear_dataframe_store(request)
+DFS -> DFS: remove_from_session(request)
+AV -> U: Redirect to home page
+
+@enduml 
