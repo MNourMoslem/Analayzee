@@ -10,6 +10,14 @@ A modern web application for analyzing CSV and Excel files with a beautiful, res
 - **Interactive Components**: Dropdowns, modals, tabs, and more
 - **Real-time Feedback**: Loading states, alerts, and notifications
 
+## Screenshots:
+![1](https://github.com/user-attachments/assets/28c37cbe-551e-4bd8-9fba-fa778a9f9b58)
+![2](https://github.com/user-attachments/assets/d967bd47-97ce-41a2-a2b9-b51c70775432)
+![3](https://github.com/user-attachments/assets/aff0b199-024c-4ce7-919d-754199f1ee10)
+![4](https://github.com/user-attachments/assets/a498c075-79f0-46bb-9738-9fddd806fb05)
+
+
+
 ## 🎨 Component Library
 
 This project includes a comprehensive component library with the following reusable components:
