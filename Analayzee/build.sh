@@ -20,8 +20,9 @@ mkdir -p media
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Run database migrations
+# Run database migrations 
 echo "🗄️ Running database migrations..."
-python manage.py migrate
+# Use --run-syncdb to handle any issues with custom user model
+python manage.py migrate --run-syncdb
 
 echo "✅ Build completed successfully!"
