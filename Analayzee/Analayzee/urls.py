@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import render
+from django.conf import settings
+from django.conf.urls.static import static
 
 def showcase_view(request):
     """View to display the component showcase page."""
@@ -28,3 +30,14 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('showcase/', showcase_view, name='showcase'),  # Component showcase
 ]
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Custom error handlers
+handler404 = 'Analayzee.error_handlers.handler404'
+handler500 = 'Analayzee.error_handlers.handler500'
+handler403 = 'Analayzee.error_handlers.handler403'
+handler400 = 'Analayzee.error_handlers.handler400'
