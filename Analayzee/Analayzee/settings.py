@@ -96,10 +96,23 @@ DATABASES = {
     }
 }
 
-# Use PostgreSQL on Render.com (or any production environment with DATABASE_URL)
+# Use PostgreSQL if DATABASE_URL is set (local or production)
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     DATABASES['default'] = dj_database_url.parse(database_url)
+    
+# Fallback PostgreSQL configuration (if DATABASE_URL not available)
+elif os.environ.get('DB_ENGINE') == 'django.db.backends.postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'analayzee_db'),
+            'USER': os.environ.get('DB_USER', 'analayzee_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation

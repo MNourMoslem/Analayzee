@@ -122,7 +122,23 @@ Analayzee is a powerful web-based data analysis platform that allows users to up
    ALLOWED_HOSTS=localhost,127.0.0.1
    ```
 
-5. **Run database migrations**
+5. **Set up database (Choose one):**
+
+   **Option A: PostgreSQL (Recommended for production):**
+   ```bash
+   # Install PostgreSQL first, then run:
+   setup_postgres.bat  # Windows
+   # or
+   ./setup_postgres.sh  # Linux/Mac
+   ```
+   
+   **Option B: SQLite (Quick start):**
+   ```bash
+   # SQLite works out of the box, no setup needed
+   # Database will be created automatically
+   ```
+
+6. **Run database migrations**
    ```bash
    python manage.py makemigrations
    python manage.py migrate
