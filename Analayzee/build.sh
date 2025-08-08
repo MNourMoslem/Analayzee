@@ -22,7 +22,9 @@ python manage.py collectstatic --noinput
 
 # Run database migrations in proper order
 echo "🗄️ Running database migrations..."
-# First, run basic Django migrations to create core tables
+# First, create migrations for accounts app if they don't exist
+python manage.py makemigrations accounts
+# Then run basic Django migrations to create core tables
 python manage.py migrate contenttypes
 python manage.py migrate auth
 python manage.py migrate sessions
