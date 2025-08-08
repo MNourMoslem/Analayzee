@@ -50,6 +50,35 @@ Analayzee is a powerful web-based data analysis platform that allows users to up
 - **Real-time Updates**: Live data processing and visualization updates
 - **Professional Styling**: Modern CSS with smooth animations
 
+## 🚀 Quick Deployment
+
+### Deploy to Render.com (Recommended)
+
+1. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
+   ```
+
+2. **Deploy on Render**:
+   - Go to [render.com](https://render.com) and sign up/login
+   - Click "New +" → "Blueprint"
+   - Connect your GitHub repository
+   - Click "Apply" - Render will automatically deploy your app!
+
+3. **Access your live app**:
+   Your app will be available at `https://your-app-name.onrender.com`
+
+📖 **Detailed deployment guide**: See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)
+
+### Deploy to Other Platforms
+
+- **Heroku**: Use `Procfile: web: gunicorn Analayzee.wsgi`
+- **Railway**: Use `railway up`
+- **DigitalOcean App Platform**: Use `build.sh` and requirements.txt
+- **AWS/Google Cloud**: Use Docker deployment
+
 ## 🚀 Quick Start
 
 ### Prerequisites
