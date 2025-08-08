@@ -26,8 +26,11 @@ echo "🗄️ Running database migrations..."
 python manage.py migrate contenttypes
 python manage.py migrate auth
 python manage.py migrate sessions
+# Then migrate accounts (custom user model) before admin
+python manage.py migrate accounts
+# Finally migrate admin (which references the custom user model)
 python manage.py migrate admin
-# Then run all remaining migrations including accounts
+# Run any remaining migrations
 python manage.py migrate
 
 echo "✅ Build completed successfully!"
