@@ -20,9 +20,14 @@ mkdir -p media
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Run database migrations 
+# Run database migrations in proper order
 echo "🗄️ Running database migrations..."
-# Use --run-syncdb to handle any issues with custom user model
-python manage.py migrate --run-syncdb
+# First, run basic Django migrations to create core tables
+python manage.py migrate contenttypes
+python manage.py migrate auth
+python manage.py migrate sessions
+python manage.py migrate admin
+# Then run all remaining migrations including accounts
+python manage.py migrate
 
 echo "✅ Build completed successfully!"
